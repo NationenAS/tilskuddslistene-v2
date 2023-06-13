@@ -18,6 +18,8 @@ function updateFromNav(event) {
         .then(d => {
             listData = d
             console.log("Fetch", performance.now() - start + " ms")
+        }).catch(e => {
+            console.log("Fetch error", performance.now() - start + " ms")
         })
 }
 
