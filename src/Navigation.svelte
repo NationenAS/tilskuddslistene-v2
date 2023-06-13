@@ -12,8 +12,8 @@ let config = {
 
 function getParams() {
     let paramsString = String()
-    if (config.municipality != "") paramsString += `&inPolygon=geometry:municipality:${config[element]}`
-    else if (config.county != "") paramsString += `&inPolygon=geometry:county:${config[element]}`
+    if (config.municipality != "") paramsString += `&inPolygon=geometry:municipality:${config.municipality}`
+    else if (config.county != "") paramsString += `&inPolygon=geometry:county:${config.county}`
     return paramsString
 }
 
