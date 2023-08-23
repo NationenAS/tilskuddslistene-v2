@@ -12,18 +12,17 @@ let config = {
     municipality: "",
     county: "",
     name: "",
-    type: "",
+    type: "sum_produksjons_og_avloesertilskudd",
     year: "2022"
 }
 let preventUpdate = true
 
 function getParams() {
-    let paramsString = String()
+    let paramsString = `&greaterThan=${config.type}:0`
     if (config.municipality != "") paramsString += `&equal=saksbehandlende_kommune:${config.municipality}`
     else if (config.county != "") paramsString += `&inPolygon=geometry:county:${config.county}`
-    if (config.type != "") paramsString += `&greaterThan=${config.type}:0`
     if (config.name != "") paramsString += `&in=orgnavn:${config.name}`
-    let limit = (config.name != "" || config.county != "") ? 99999 : 10
+    let limit = (config.name != "" || config.county != "") ? 99999 : 100
     return { paramsString, limit }
 }
 
@@ -46,11 +45,11 @@ function resetMunicipality() {
 }
 
 function update(c) {
-    console.log("Config",c)
     let p = getParams()
     dispatch('navigationChange', {
         params: p.paramsString,
-        limit: p.limit
+        limit: p.limit,
+        config: c
     })
     preventUpdate = true
 }
@@ -83,46 +82,59 @@ onMount(() => {
             {/each}
         </select>
         <select class:active="{config.type}" name="type" bind:value={config.type} on:change={() => {preventUpdate = false, update()}}>
-            <option value="">Alle produksjonstyper</option>
             {#each productionCodes as code}
             <option value="{code[0]}">{code[1]}</option>
             {/each}
         </select>
         <input class:active="{config.name}" type="text" placeholder="Søk på navn" bind:value={config.name}>
-        <input type="submit" value="Søk" on:click={() => {preventUpdate = false, update()}}>
+        <input type="submit" value="Søk" on:click={() => {preventUpdate = false, update()}} on:submit={() => {preventUpdate = false, update()}}>
+        <input type="submit" value="Tilbakestill" on:click={() => {preventUpdate = false; config = { municipality: "", county: "", name: "", type: "sum_produksjons_og_avloesertilskudd", year: "2022"}; }}>
     </div>
 </form>
 
 <style>
+form {
+    padding-block: 20px 30px;
+    border: 3px solid #eee;
+    border-radius: 5px;
+}
 .navigation {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    justify-content: center;
+    gap: 18px;
 }
 select, input {
     display: block;
-    background: #636363;
     border: none;
-    padding: 10px 15px;
-    color: white;
+    border-bottom: 3px solid #ccc;
+    padding: 5px 5px 5px 0;
     font-size: 1rem;
-    border-radius: 2px;
+    color: #666;
     outline: none;
 }
 .active {
-    background: #406619;
+    border-color: #406619;
+    color: black;
 }
 select, input[type=submit] {
     cursor: pointer;
+}
+input[type=submit] {
+    border: 3px solid #ccc;
+    background: white;
+    padding-inline: 10px;
+    border-radius: 3px;
 }
 select:hover, input[type=submit]:hover, input[type=text]:focus {
     filter: brightness(1.1);
 }
 select:disabled {
     cursor: not-allowed;
+    border-bottom-style: dotted;
 }
 input::placeholder {
-    color: white;
+    color: #666;
     opacity: .7;
 }
 </style>
