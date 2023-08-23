@@ -34,13 +34,12 @@ function updateFromNav(event) {
     uniqueData = {}
     showHidden = false
     console.log(event.detail.config)
-    let limit = event.detail.limit || 99999
     let fields = `id,orgnavn,saksbehandlende_kommune,geometry,${event.detail.config.type}`
     let params = `sortBy=${event.detail.config.type}&fields=(${fields})`
     let start = performance.now()
     console.log("Fetching: " + url + params + event.detail.params)
     fetching = true
-    fetch(url + params + event.detail.params + "&limit=" + limit)
+    fetch(url + params + event.detail.params)
         .then(r => {
             console.log("Fetch time:", performance.now() - start + " ms")
             console.log("Fetch size:", Number(r.headers.get("content-length"))/1000 + " kB")
@@ -49,9 +48,8 @@ function updateFromNav(event) {
         .then(d => {
             listData = d
             config = event.detail.config
-            config.unit = productionCodes.find(c => c[0] == config.type)[3]
             fetching = false
-            if (event.detail.limit != 10) getTotals()
+            if (config.limit != 100) getTotals()
             console.log("Hits:", d.length)
         }).catch(e => {
             console.log("Fetch error, time:", performance.now() - start + " ms, msg:", e)
@@ -108,53 +106,54 @@ function toggleView() {
 <div class="no-items">Ingen oppføringer</div>
 
 {:else}
+<div class="totals" class:notification={!totals.count}>
+    {#if totals.count }
+    Antall mottakere: {totals.count}. {totals.sum}
+    {:else}
+    Det er et stort antall mottakere i søket. Du ser nå de 100 største produsentene. Du kan snevre inn søket ved å velge kommune/fylke eller søke på navn.
+    {/if}
+</div>
 <div class="result-container">
     <div class="toggle-view" on:click={() => { toggleView() }} on:keypress={() => { toggleView() }}>{viewMap ? "Skjul" : "Vis"} kart</div>
     {#if viewMap}
     <Map data={listData} config={config} bind:this={map} />
     {/if}
-    {#if totals.count }
-    <div class="result-totals">
-        Antall mottakere: {totals.count}. {totals.sum}
-    </div>
-    {/if}
     <div class="result-table">
-        <div class="result-row">
+        <div class="result-row result-header">
             <div>Navn</div>
             <div>Kommune</div>
-            <div class="result-sum">{config.unit}</div>
+            <div class="result-sum">{config.unit} <span>&#9660;</span></div>
         </div>
         {#each listData as item, i}
         {#if i < 100}
-        <div class="result-row" class:hidden="{i > 9 && !showHidden}" on:click={() => { toggleInfo(item.id) }} on:keypress={() => { toggleInfo(item.id) }}>
+        <div class="result-row" class:expanded={uniqueData.id == item.id} class:hidden="{i > 9 && !showHidden}" on:click={() => { toggleInfo(item.id) }} on:keypress={() => { toggleInfo(item.id) }}>
             <div>{item.orgnavn}</div>
             <div>{getMunicipality(item.saksbehandlende_kommune)}</div>
             <div class="result-sum">{ item[config.type].toLocaleString('nb-NO') }</div>
-        </div>
-        {/if}
-        {#if uniqueData.id == item.id}
-        <div class="info">
-            <div class="info-header">
-                <div>
-                    Org.nr: <span>{uniqueData.orgnr}</span><br>
-                    Totalt areal: <span>{uniqueData.totalareal} dekar</span>
+            {#if uniqueData.id == item.id}
+            <div class="info">
+                <div class="info-header">
+                    <div>
+                        Org.nr: <span>{uniqueData.orgnr}</span><br>
+                        Totalt areal: <span>{uniqueData.totalareal} dekar</span>
+                    </div>
+                    <div on:click={() => { map.zoomToPoint(uniqueData.id) }}><svg viewBox="0 0 23 33.6"><path d="M11.5,0c6.3-.1,12,6.1,11.5,12.5-.1,3.2-2,5.8-3.5,8.5-2.1,3.7-6.7,11.8-7,12.1-.5,.8-1.7,.7-2.1,0-.5-.9-5.8-10-7.9-13.7C1.3,17.3,.1,15,0,12.6-.5,6.2,5.1,0,11.5,0c0,0,0,0,0,0ZM6.4,12c0,2.9,2.3,5,4.8,5.1,7.2,0,7.2-10.2,.2-10.3-2.6,0-5,2.3-5,5.1Z"></path></svg><u>Se gården på kart</u></div>
                 </div>
-                <div on:click={() => { map.zoomToPoint(uniqueData.id) }}><svg viewBox="0 0 23 33.6"><path d="M11.5,0c6.3-.1,12,6.1,11.5,12.5-.1,3.2-2,5.8-3.5,8.5-2.1,3.7-6.7,11.8-7,12.1-.5,.8-1.7,.7-2.1,0-.5-.9-5.8-10-7.9-13.7C1.3,17.3,.1,15,0,12.6-.5,6.2,5.1,0,11.5,0c0,0,0,0,0,0ZM6.4,12c0,2.9,2.3,5,4.8,5.1,7.2,0,7.2-10.2,.2-10.3-2.6,0-5,2.3-5,5.1Z"></path></svg><u>Se gården på kart</u></div>
+                <h4>Utdrag av produksjon</h4>
+                <div class="info-details">
+                    {#each relevantCodes as code}
+                        <div><div>{code[0]}</div><div>{code[1]}</div></div>
+                    {/each}
+                </div>
             </div>
-            <h4>Produksjon</h4>
-            <div class="info-details">
-                {#each relevantCodes as code}
-                    <div><div>{code[0]}</div><div>{code[1]}</div></div>
-                {/each}
-            </div>
+            {/if}
         </div>
         {/if}
         {/each}
         {#if listData.length > 10 && showHidden == false}
-        <div class="result-more" on:click={() => { showHidden = true }} on:keypress={() => { showHidden = true }}>Se flere ({listData.length})</div>
+        <div class="result-more" on:click={() => { showHidden = true }} on:keypress={() => { showHidden = true }}>Se de neste {listData.length - 10}</div>
         {/if}
     </div>
-    <div class="result-notes">Listen over produksjon er ikke utfyllende.</div>
 </div>
 {/if}
 
@@ -182,9 +181,17 @@ h2 {
     position: relative;   
     margin-top: 1.5rem;
 }
-.result-totals {
+.totals {
     margin-block: 1rem;
     font-size: .9em;
+}
+.totals.notification {
+    background: #eee;
+    border-radius: 5px;
+    padding: 1em 1.8em;
+}
+.result-table {
+    margin-top: 1em;
 }
 .result-row {
     display: grid;
@@ -192,22 +199,38 @@ h2 {
     grid-template-rows: 30px;
     align-items: center;
     cursor: pointer;
+    padding: 8px 10px;
 }
-.result-row:hover {
+.result-row:nth-child(even) {
+    background: #f9f9f9;
+}
+.result-row:not(.expanded):hover {
     background: #eee;
 }
-.result-row:nth-child(1) {
+.result-header {
     font-weight: bold;
     cursor: initial;
 }
-.result-row:nth-child(1) .result-sum {
+.result-header .result-sum {
     text-transform: capitalize;
 }
-.result-row:nth-child(1):hover {
+.result-header:hover {
     background: initial;
+}
+.result-row > div > span {
+    color: #406619;
+    font-size: .9em;
+    margin-bottom: .1em;
 }
 .result-row.hidden {
     display: none;
+}
+.result-row.expanded {
+    background: white;
+    margin-block: 1em;
+    padding: 1em 1.5em 1.5em 1.5em;
+    border: 3px solid #eee;
+    border-radius: 5px;
 }
 .result-sum {
     text-align: right;
@@ -220,16 +243,10 @@ h2 {
     font-weight: bold;
     cursor: pointer;
 }
-.result-notes {
-    font-size: .8em;
-    margin-top: 1em;
-    opacity: .7;
-}
 .info {
-    margin-block: 1rem;
-    padding-left: 1.5rem;
-    border-left: 3px solid #406619;
     font-size: .9em;
+    grid-column: 1/-1;
+    margin-top: 0.8em;
 }
 .info-header {
     display: flex;
@@ -238,7 +255,7 @@ h2 {
 }
 h4 {
     font-size: 1.05em;
-    margin-bottom: 4px;
+    margin-block: .8em .7em;
 }
 .info-details {
     display: flex;
@@ -255,5 +272,13 @@ h4 {
 .info svg {
     height: 1em;
     margin-right: .5em;
+}
+@media (max-width: 680px) {
+    .result-row {
+        grid-template-columns: 3fr 1fr;
+    }
+    .result-row div:nth-child(2) {
+        display: none;
+    }
 }
 </style>

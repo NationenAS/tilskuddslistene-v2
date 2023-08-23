@@ -81,7 +81,7 @@ function createMap(container) {
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
 <div class="map-container">
-    <div class="legend"><span style="height: {minRadius * 2}px; width: {minRadius * 2}px; background: hsl(90, 61%, 45%)"></span> {getMinMax().min} <span style="height: {maxRadius * 2}px; width: {maxRadius * 2}px; background: hsl(90, 61%, 25%);"></span> {getMinMax().max}</div>
+    <div class="legend"><span style="height: {minRadius * 2}px; width: {minRadius * 2}px; background: hsl(90, 61%, 45%)"></span> {getMinMax().min} <span style="height: {maxRadius * 2}px; width: {maxRadius * 2}px; background: hsl(90, 61%, 20%);"></span> {getMinMax().max}</div>
     <div class="map" use:createMap></div>
 </div>
 

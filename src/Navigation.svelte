@@ -13,17 +13,24 @@ let config = {
     county: "",
     name: "",
     type: "sum_produksjons_og_avloesertilskudd",
-    year: "2022"
+    year: "2022",
+    limit: 100
 }
 let preventUpdate = true
 
+// Get params string and set config
 function getParams() {
     let paramsString = `&greaterThan=${config.type}:0`
     if (config.municipality != "") paramsString += `&equal=saksbehandlende_kommune:${config.municipality}`
     else if (config.county != "") paramsString += `&inPolygon=geometry:county:${config.county}`
     if (config.name != "") paramsString += `&in=orgnavn:${config.name}`
-    let limit = (config.name != "" || config.county != "") ? 99999 : 100
-    return { paramsString, limit }
+    if (config.name != "" || config.county != "") {
+        paramsString += "&limit=" + 99999
+        config.limit = 99999
+    }
+    else paramsString += "&limit=" + config.limit
+    config.unit = productionCodes.find(c => c[0] == config.type)[3]
+    return paramsString
 }
 
 function getCounty(municipalityNumber) {
@@ -47,8 +54,7 @@ function resetMunicipality() {
 function update(c) {
     let p = getParams()
     dispatch('navigationChange', {
-        params: p.paramsString,
-        limit: p.limit,
+        params: p,
         config: c
     })
     preventUpdate = true
