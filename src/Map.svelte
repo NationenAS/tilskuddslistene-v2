@@ -90,7 +90,7 @@ function createMap(container) {
     position: relative;
 }
 .map {
-    height: 600px;
+    height: 500px;
     outline: none;
     border-radius: 5px;
 }

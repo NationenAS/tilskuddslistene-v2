@@ -3,13 +3,14 @@
 import Spinner from "./Spinner.svelte"
 import Navigation from "./Navigation.svelte"
 import Map from "./Map.svelte"
-import { municipalities } from "./municipalities"
-import { productionCodes } from "./productionCodes"
+import { municipalities } from "./lib/municipalities"
+import { productionCodes } from "./lib/productionCodes"
 
 const url = 'https://services.api.no/api/acies/v1/custom/AgriculturalSubsidy?'
 
 // Main list
-let listData = [],
+let data = [],
+    listData = [],
     totals = {},
     config
 
@@ -19,26 +20,40 @@ let uniqueData = {},
     relevantCodes = []
 
 // UI
-let showHidden = false,
-    fetching = false,
+const nextLength = 25
+let fetching = false,
+    viewMap = true,
+    listLength = 0,
     map
 
-$:  viewMap = true
+$:  setListData(listLength)
+function setListData(length) {
+    let x = data.slice(0,length)
+    listData = x
+}
+function getNextElements() {
+    let left = data.length - listLength
+    listLength += left >= nextLength ? nextLength : left
+}
 
 function getMunicipality(number) {
     let m = municipalities.find(e => e[1] == number)
     return m[0]
 }
-function updateFromNav(event) {
+function reset() {
+    data = []
     listData = []
+    listLength = 0
     uniqueData = {}
-    showHidden = false
-    console.log(event.detail.config)
+}
+function updateFromNav(event) {
+    reset()
+    fetching = true
+    console.log("Config:", performance.now(), event.detail.config)
     let fields = `id,orgnavn,saksbehandlende_kommune,geometry,${event.detail.config.type}`
     let params = `sortBy=${event.detail.config.type}&fields=(${fields})`
     let start = performance.now()
     console.log("Fetching: " + url + params + event.detail.params)
-    fetching = true
     fetch(url + params + event.detail.params)
         .then(r => {
             console.log("Fetch time:", performance.now() - start + " ms")
@@ -46,10 +61,11 @@ function updateFromNav(event) {
             return r.json()
         })
         .then(d => {
-            listData = d
+            data = d
+            listLength = 10
             config = event.detail.config
             fetching = false
-            if (config.limit != 100) getTotals()
+            getTotals()
             console.log("Hits:", d.length)
         }).catch(e => {
             console.log("Fetch error, time:", performance.now() - start + " ms, msg:", e)
@@ -57,25 +73,27 @@ function updateFromNav(event) {
 }
 function getProduction() {
     relevantCodes = []
-    for (const code in uniqueData) {
-        if (code.startsWith("p") && uniqueData[code] > 0) { // MINIMUMSVERDI FRA PR-CO
-            let details = productionCodes.find(e => e[0] == code)
-            if (details) {
-                let name = details ? details[2] : code
-                relevantCodes.push([name, uniqueData[code]])
+    for (const code in uniqueData) {                                    // Loop though production codes in fetch result
+        if (code.startsWith("p") && uniqueData[code] > 0) {             // Get code if has production
+            let details = productionCodes.find(e => e[0] == code)       // Get details from productionCodes.js
+            if (details) {                                              // If found in productionCodes.js, add to array
+                let name = details[1]                                   // FIX NAME
+                let unit = details[3] == "dekar" ? "da." : details[3]
+                relevantCodes.push({ name: name, value: uniqueData[code], unit: unit})
             }
         }
     }
 }
 function getTotals() {
-    let sum = listData.reduce( (a, b) => {
+    let sum = data.reduce( (a, b) => {
                 return a + b[config.type]
             }, 0)
     let string = `Totalt: ${sum.toLocaleString('nb-NO')} (${config.unit}).`
     totals = {
-        count: listData.length,
+        count: data.length,
         sum: string
     }
+    console.log("Totals:", totals)
 }
 function toggleInfo(id) {  // TODO: Put in child template
     if (id == uniqueData.id) { lastUniqueData = uniqueData; uniqueData = {}; return }
@@ -93,30 +111,31 @@ function toggleView() {
     viewMap = !viewMap
 }
 
+
 </script>
 
 <h2>Tilskuddslistene</h2>
 
 <Navigation on:navigationChange={updateFromNav} />
 
-{#if listData.length == 0 && fetching}
+{#if data.length == 0 && fetching}
 <Spinner />
 
-{:else if listData.length == 0}
+{:else if data.length == 0}
 <div class="no-items">Ingen oppføringer</div>
 
 {:else}
-<div class="totals" class:notification={!totals.count}>
-    {#if totals.count }
+<div class="totals" class:notification={totals.count >= 1000}>
+    {#if totals.count < 1000 }
     Antall mottakere: {totals.count}. {totals.sum}
     {:else}
-    Det er et stort antall mottakere i søket. Du ser nå de 100 største produsentene. Du kan snevre inn søket ved å velge kommune/fylke eller søke på navn.
+    Det er et stort antall mottakere i søket. Du ser nå de {totals.count} største produsentene. Du kan snevre inn søket ved å velge kommune/fylke eller søke på navn.
     {/if}
 </div>
 <div class="result-container">
     <div class="toggle-view" on:click={() => { toggleView() }} on:keypress={() => { toggleView() }}>{viewMap ? "Skjul" : "Vis"} kart</div>
     {#if viewMap}
-    <Map data={listData} config={config} bind:this={map} />
+    <Map data={data} config={config} bind:this={map} />
     {/if}
     <div class="result-table">
         <div class="result-row result-header">
@@ -124,9 +143,8 @@ function toggleView() {
             <div>Kommune</div>
             <div class="result-sum">{config.unit} <span>&#9660;</span></div>
         </div>
-        {#each listData as item, i}
-        {#if i < 100}
-        <div class="result-row" class:expanded={uniqueData.id == item.id} class:hidden="{i > 9 && !showHidden}" on:click={() => { toggleInfo(item.id) }} on:keypress={() => { toggleInfo(item.id) }}>
+        {#each listData as item (item.id)}
+        <div class="result-row" class:expanded={uniqueData.id == item.id} on:click={() => { toggleInfo(item.id) }} on:keypress={() => { toggleInfo(item.id) }}>
             <div>{item.orgnavn}</div>
             <div>{getMunicipality(item.saksbehandlende_kommune)}</div>
             <div class="result-sum">{ item[config.type].toLocaleString('nb-NO') }</div>
@@ -137,21 +155,20 @@ function toggleView() {
                         Org.nr: <span>{uniqueData.orgnr}</span><br>
                         Totalt areal: <span>{uniqueData.totalareal} dekar</span>
                     </div>
-                    <div on:click={() => { map.zoomToPoint(uniqueData.id) }}><svg viewBox="0 0 23 33.6"><path d="M11.5,0c6.3-.1,12,6.1,11.5,12.5-.1,3.2-2,5.8-3.5,8.5-2.1,3.7-6.7,11.8-7,12.1-.5,.8-1.7,.7-2.1,0-.5-.9-5.8-10-7.9-13.7C1.3,17.3,.1,15,0,12.6-.5,6.2,5.1,0,11.5,0c0,0,0,0,0,0ZM6.4,12c0,2.9,2.3,5,4.8,5.1,7.2,0,7.2-10.2,.2-10.3-2.6,0-5,2.3-5,5.1Z"></path></svg><u>Se gården på kart</u></div>
+                    <div on:click={() => { map.zoomToPoint(uniqueData.id) }} on:keypress={() => { map.zoomToPoint(uniqueData.id) }}><svg viewBox="0 0 23 33.6"><path d="M11.5,0c6.3-.1,12,6.1,11.5,12.5-.1,3.2-2,5.8-3.5,8.5-2.1,3.7-6.7,11.8-7,12.1-.5,.8-1.7,.7-2.1,0-.5-.9-5.8-10-7.9-13.7C1.3,17.3,.1,15,0,12.6-.5,6.2,5.1,0,11.5,0c0,0,0,0,0,0ZM6.4,12c0,2.9,2.3,5,4.8,5.1,7.2,0,7.2-10.2,.2-10.3-2.6,0-5,2.3-5,5.1Z"></path></svg><u>Se gården på kart</u></div>
                 </div>
                 <h4>Utdrag av produksjon</h4>
                 <div class="info-details">
                     {#each relevantCodes as code}
-                        <div><div>{code[0]}</div><div>{code[1]}</div></div>
+                        <div><div>{code.name}</div><div>{code.value} {code.unit}</div></div>
                     {/each}
                 </div>
             </div>
             {/if}
         </div>
-        {/if}
         {/each}
-        {#if listData.length > 10 && showHidden == false}
-        <div class="result-more" on:click={() => { showHidden = true }} on:keypress={() => { showHidden = true }}>Se de neste {listData.length - 10}</div>
+        {#if listData.length < data.length}
+        <div class="result-more" on:click={() => { getNextElements() }} on:keypress={() => { getNextElements() }}>Se flere</div>
         {/if}
     </div>
 </div>
@@ -222,9 +239,6 @@ h2 {
     font-size: .9em;
     margin-bottom: .1em;
 }
-.result-row.hidden {
-    display: none;
-}
 .result-row.expanded {
     background: white;
     margin-block: 1em;
@@ -277,7 +291,7 @@ h4 {
     .result-row {
         grid-template-columns: 3fr 1fr;
     }
-    .result-row div:nth-child(2) {
+    .result-row > div:nth-child(2) {
         display: none;
     }
 }

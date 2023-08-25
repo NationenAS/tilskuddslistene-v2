@@ -1,5 +1,4 @@
-// Kode, select-navn, info-beskrivelse, enhet
-export const productionCodes = [
+export const selectableCodes = [
     ["sum_produksjons_og_avloesertilskudd", "Sum tilskudd", "Sum produksjons- og avløsertilskudd", "kr"],
     ["p120_vaar", "Melk, ku", "Melkekyr (vår)", "antall"],
     ["p139_vaar", "Melk, sau", "Melkesau, født i fjor eller tidligere (vår)", "antall"],

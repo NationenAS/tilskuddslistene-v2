@@ -1,8 +1,8 @@
 <script>
 
-import { counties } from "./counties"
-import { municipalities } from "./municipalities"
-import { productionCodes } from "./productionCodes"
+import { counties } from "./lib/counties"
+import { municipalities } from "./lib/municipalities"
+import { selectableCodes } from "./lib/selectList";
 import { createEventDispatcher } from 'svelte'
 import { onMount } from "svelte"
 
@@ -14,7 +14,7 @@ let config = {
     name: "",
     type: "sum_produksjons_og_avloesertilskudd",
     year: "2022",
-    limit: 100
+    limit: 1000
 }
 let preventUpdate = true
 
@@ -24,12 +24,12 @@ function getParams() {
     if (config.municipality != "") paramsString += `&equal=saksbehandlende_kommune:${config.municipality}`
     else if (config.county != "") paramsString += `&inPolygon=geometry:county:${config.county}`
     if (config.name != "") paramsString += `&in=orgnavn:${config.name}`
-    if (config.name != "" || config.county != "") {
+    if (config.name != "" || config.municipality != "") {
         paramsString += "&limit=" + 99999
         config.limit = 99999
     }
     else paramsString += "&limit=" + config.limit
-    config.unit = productionCodes.find(c => c[0] == config.type)[3]
+    config.unit = selectableCodes.find(c => c[0] == config.type)[3]
     return paramsString
 }
 
@@ -88,13 +88,13 @@ onMount(() => {
             {/each}
         </select>
         <select class:active="{config.type}" name="type" bind:value={config.type} on:change={() => {preventUpdate = false, update()}}>
-            {#each productionCodes as code}
+            {#each selectableCodes as code}
             <option value="{code[0]}">{code[1]}</option>
             {/each}
         </select>
         <input class:active="{config.name}" type="text" placeholder="Søk på navn" bind:value={config.name}>
         <input type="submit" value="Søk" on:click={() => {preventUpdate = false, update()}} on:submit={() => {preventUpdate = false, update()}}>
-        <input type="submit" value="Tilbakestill" on:click={() => {preventUpdate = false; config = { municipality: "", county: "", name: "", type: "sum_produksjons_og_avloesertilskudd", year: "2022"}; }}>
+        <input type="submit" value="Tilbakestill" on:click={() => {preventUpdate = false; config = { municipality: "", county: "", name: "", type: "sum_produksjons_og_avloesertilskudd", year: "2022", limit: 100, unit: "kr"}; }}>
     </div>
 </form>
 
