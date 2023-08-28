@@ -49,7 +49,7 @@ function reset() {
 function updateFromNav(event) {
     reset()
     fetching = true
-    console.log("Config:", performance.now(), event.detail.config)
+    console.table(event.detail.config)
     let fields = `id,orgnavn,saksbehandlende_kommune,geometry,${event.detail.config.type}`
     let params = `sortBy=${event.detail.config.type}&fields=(${fields})`
     let start = performance.now()
@@ -73,13 +73,19 @@ function updateFromNav(event) {
 }
 function getProduction() {
     relevantCodes = []
-    for (const code in uniqueData) {                                    // Loop though production codes in fetch result
-        if (code.startsWith("p") && uniqueData[code] > 0) {             // Get code if has production
+    for (const code in uniqueData) {        
+        let value = uniqueData[code]                                    // Loop though production codes in fetch result
+        if (code.startsWith("p") && value > 0) {                        // Get code if has production
             let details = productionCodes.find(e => e[0] == code)       // Get details from productionCodes.js
             if (details) {                                              // If found in productionCodes.js, add to array
-                let name = details[1]                                   // FIX NAME
+                let name = details[1]
                 let unit = details[3] == "dekar" ? "da." : details[3]
-                relevantCodes.push({ name: name, value: uniqueData[code], unit: unit})
+                let color = 
+                    code.startsWith('p1') ? "#f3dfdf" :
+                    code.startsWith('p2') ? "#ede6dd" :
+                    code.startsWith('p8') ? "#e2e5e0" :
+                    "#eee"
+                relevantCodes.push({ name: name, value: value, unit: unit, color: color})
             }
         }
     }
@@ -159,8 +165,8 @@ function toggleView() {
                 </div>
                 <h4>Utdrag av produksjon</h4>
                 <div class="info-details">
-                    {#each relevantCodes as code}
-                        <div><div>{code.name}</div><div>{code.value} {code.unit}</div></div>
+                    {#each relevantCodes as p}
+                        <div style="background: {p.color};"><div>{p.name}</div><div>{p.value} {p.unit}</div></div>
                     {/each}
                 </div>
             </div>
@@ -293,6 +299,10 @@ h4 {
     }
     .result-row > div:nth-child(2) {
         display: none;
+    }
+    .info-details > div {
+        width: 100%;
+        padding: 3px 8px;
     }
 }
 </style>

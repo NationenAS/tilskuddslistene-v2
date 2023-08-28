@@ -16,8 +16,8 @@ let map,
     markers = []
     // renderer = L.canvas({ padding: 10 })
 
-const minRadius = 2
-const maxRadius = 10
+const minRadius = 1
+const maxRadius = 5
 const color = [90, 61]
 
 function getMinMax() {
@@ -36,17 +36,23 @@ function getSize(point) {
         color: `hsl(${color[0]}, ${color[1]}%, ${Math.round((1 - r) * 25 + 20)}%)`
     }
 }
+function updateRadius() {
+    let level = map.getZoom() / 4
+    markers.map(e => e.setRadius(level * e.options.originalRadius))
+    console.log(map.getZoom())
+}
 
 function update(data) {
     pointGroup.clearLayers().remove()
     minMax = getMinMax()
     markers = []
+    data = data.reverse()
     for (const point of data) {
         if (point.geometry.x == 0) continue
         let size = getSize(point)
-        markers[point.id] = L.circleMarker([point.geometry.y, point.geometry.x], { radius: size.radius }) // { renderer: renderer}
+        markers[point.id] = L.circleMarker([point.geometry.y, point.geometry.x], { radius: size.radius, originalRadius: size.radius }) // { renderer: renderer} / size.radius
             .on('click', () => {
-                console.log(`${point.orgnavn}: ${size.color}`)
+                console.log(`${markers[point.id].options.radius}`)
             })
             .setStyle({
                 fillColor: size.color,
@@ -67,7 +73,7 @@ $: if(mounted) update(data)
 function createMap(container) {
     map = L.map(container, { preferCanvas: true })
 		.setView([61, 9], 7)
-		//.on('moveend', update)
+		.on('zoomend', updateRadius)
 	L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
 		maxZoom: 19,
 		attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>' // ADD BASEMAP SOURCE

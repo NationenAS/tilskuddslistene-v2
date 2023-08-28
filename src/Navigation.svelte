@@ -60,7 +60,9 @@ function update(c) {
     preventUpdate = true
 }
 
-$: if (!preventUpdate) update(config)
+$: if (!preventUpdate) {
+    update(config)
+}
 
 onMount(() => {
     update(config)
@@ -87,7 +89,7 @@ onMount(() => {
             {/if}
             {/each}
         </select>
-        <select class:active="{config.type}" name="type" bind:value={config.type} on:change={() => {preventUpdate = false, update()}}>
+        <select class:active="{config.type}" name="type" bind:value={config.type} on:change={() => {preventUpdate = false}}>
             {#each selectableCodes as code}
             <option value="{code[0]}">{code[1]}</option>
             {/each}
