@@ -1,4 +1,4 @@
-export const selectableCodes = [
+export const selectableCodes: [code: string, textShort: string, textLong: string, unit: string ][] = [
     ["sum_produksjons_og_avloesertilskudd", "Sum tilskudd", "Sum produksjons- og avløsertilskudd", "kr"],
     ["p120_vaar", "Melk, ku", "Melkekyr (vår)", "antall"],
     ["p139_vaar", "Melk, sau", "Melkesau, født i fjor eller tidligere (vår)", "antall"],

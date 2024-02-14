@@ -1,8 +1,19 @@
-* {
-    box-sizing: border-box;
-    margin: 0;
-    font-family: 'Open Sans';
-}
 body {
     overflow-x: hidden;
+}
+#Tilskuddslistene {
+    --TLAccentHue: 30deg;
+    --TLAccentColorFull: hsl(var(--TLAccentHue), 100%, 50%);
+    --TLAccentColorLight: hsl(var(--TLAccentHue), 100%, 80%);
+    --TLButtonBorderRadius: 99px;
+    --TLButtonPadding: 0.5em 1em;
+
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+#Tilskuddslistene * {
+    box-sizing: border-box;
+    margin: 0;
+    font-family: 'National 2', 'Open Sans';
 }

@@ -16,7 +16,7 @@ let map,
     markers = []
     // renderer = L.canvas({ padding: 10 })
 
-const minRadius = 1
+const minRadius = 1.2
 const maxRadius = 5
 const color = [90, 61]
 
@@ -32,14 +32,14 @@ function getSize(point) {
     let r = (point[config.type] - minMax.min) / minMax.specter
     return {
         r: r,
-        radius: r * (maxRadius - minRadius) + minRadius,
+        // radius: r * (maxRadius - minRadius) + minRadius,
+        radius: 1.2,
         color: `hsl(${color[0]}, ${color[1]}%, ${Math.round((1 - r) * 25 + 20)}%)`
     }
 }
 function updateRadius() {
     let level = map.getZoom() / 4
     markers.map(e => e.setRadius(level * e.options.originalRadius))
-    console.log(map.getZoom())
 }
 
 function update(data) {
@@ -87,7 +87,15 @@ function createMap(container) {
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
 <div class="map-container">
-    <div class="legend"><span style="height: {minRadius * 2}px; width: {minRadius * 2}px; background: hsl(90, 61%, 45%)"></span> {getMinMax().min} <span style="height: {maxRadius * 2}px; width: {maxRadius * 2}px; background: hsl(90, 61%, 20%);"></span> {getMinMax().max}</div>
+    {#if minMax}
+        <div class="legend"><span style="height: {minRadius * 2}px; width: {minRadius * 2}px; background: hsl(90, 61%, 45%)"></span> {minMax.min.toLocaleString('nb-NO', {
+            notation: 'compact',
+            compactDisplay: 'short',
+        })} <span style="height: {maxRadius * 2}px; width: {maxRadius * 2}px; background: hsl(90, 61%, 20%);"></span> {minMax.max.toLocaleString('nb-NO', {
+            notation: 'compact',
+            compactDisplay: 'short',
+        })}</div>
+    {/if}
     <div class="map" use:createMap></div>
 </div>
 
@@ -102,12 +110,13 @@ function createMap(container) {
 }
 .legend {
     position: absolute;
-    right: 0;
-    top: -30px;
+    right: 10px;
+    top: 10px;
     font-size: 12px;
     display: flex;
     gap: 5px;
     align-items: center;
+    z-index: 1000;
 }
 .legend span {
     display: inline-block;

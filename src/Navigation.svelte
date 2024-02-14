@@ -1,148 +1,116 @@
-<script>
+<script lang="ts">
 
+import Select from "./Select.svelte";
 import { counties } from "./lib/counties"
 import { municipalities } from "./lib/municipalities"
 import { selectableCodes } from "./lib/selectList";
-import { createEventDispatcher } from 'svelte'
-import { onMount } from "svelte"
+import { defaultConfig, configStore } from "./stores"
+import type { Config } from "./stores";
 
-const dispatch = createEventDispatcher()
+let localConfig: Config = { ...$configStore };
 
-let config = {
-    municipality: "",
-    county: "",
-    name: "",
-    type: "sum_produksjons_og_avloesertilskudd",
-    year: "2022",
-    limit: 1000
-}
-let preventUpdate = true
-
-// Get params string and set config
-function getParams() {
-    let paramsString = `&greaterThan=${config.type}:0`
-    if (config.municipality != "") paramsString += `&equal=saksbehandlende_kommune:${config.municipality}`
-    else if (config.county != "") paramsString += `&inPolygon=geometry:county:${config.county}`
-    if (config.name != "") paramsString += `&in=orgnavn:${config.name}`
-    if (config.name != "" || config.municipality != "") {
-        paramsString += "&limit=" + 99999
-        config.limit = 99999
+const updateConfig = () => {
+    // If municipality, set county
+    if (localConfig.municipality != $configStore.municipality) {
+        localConfig.county = municipalities.find(e => e[1] == localConfig.municipality)?.[2] || undefined;
     }
-    else paramsString += "&limit=" + config.limit
-    config.unit = selectableCodes.find(c => c[0] == config.type)[3]
-    return paramsString
-}
-
-function getCounty(municipalityNumber) {
-    let m = municipalities.find(e => e[1] == municipalityNumber)
-    return { name: m[0], number: m[1], county: m[2] }
-}
-
-function setCorrectCounty() {
-    preventUpdate = false
-    if (config.municipality != "") {
-        let m = getCounty(config.municipality)
-        if (config.county != m.county) config.county = m.county
+    // If county, reset municipality
+    else if (localConfig.county != $configStore.county) {
+        localConfig.municipality = undefined
     }
+    // If type, set unit
+    else if (localConfig.type != $configStore.type) {
+        localConfig.unit = selectableCodes.find(c => c[0] == localConfig.type)?.[3] || undefined
+    }
+    $configStore = { ...localConfig }
 }
 
-function resetMunicipality() {
-    preventUpdate = false
-    config.municipality = ""
+const reset = () => {
+    localConfig = { ...defaultConfig }
+    $configStore = { ...defaultConfig }
 }
 
-function update(c) {
-    let p = getParams()
-    dispatch('navigationChange', {
-        params: p,
-        config: c
-    })
-    preventUpdate = true
-}
+$: filteredMunicipalities = $configStore.county == undefined ? municipalities : municipalities.filter(m => m[2] == $configStore.county)
 
-$: if (!preventUpdate) {
-    update(config)
-}
-
-onMount(() => {
-    update(config)
-})
+$: console.log(localConfig)
 
 </script>
 
-<form on:submit|preventDefault={() => {preventUpdate = false, update()}}>
+<form>
     <div class="navigation">
-        <select name="year" bind:value={config.year} disabled>
-            <option value="2022">2022</option>
-        </select>
-        <select class:active="{config.county}" name="county" bind:value={config.county} on:change={resetMunicipality}>
-            <option value="">Alle fylker</option>
-            {#each counties as county}
-            <option value="{county[1]}">{county[0]}</option>
-            {/each}
-        </select>
-        <select class:active="{config.municipality}" name="municipality" bind:value={config.municipality} on:change={setCorrectCounty}>
-            <option value="">Alle kommuner</option>
-            {#each municipalities as municipality}
-            {#if ( config.county != "" && config.county == municipality[2] ) || config.county == "" }
-            <option value="{municipality[1]}">{municipality[0]}</option>
-            {/if}
-            {/each}
-        </select>
-        <select class:active="{config.type}" name="type" bind:value={config.type} on:change={() => {preventUpdate = false}}>
-            {#each selectableCodes as code}
-            <option value="{code[0]}">{code[1]}</option>
-            {/each}
-        </select>
-        <input class:active="{config.name}" type="text" placeholder="Søk på navn" bind:value={config.name}>
-        <input type="submit" value="Søk" on:click={() => {preventUpdate = false, update()}} on:submit={() => {preventUpdate = false, update()}}>
-        <input type="submit" value="Tilbakestill" on:click={() => {preventUpdate = false; config = { municipality: "", county: "", name: "", type: "sum_produksjons_og_avloesertilskudd", year: "2022", limit: 100, unit: "kr"}; }}>
+        <div>
+            <Select 
+                value={localConfig.year}
+                options={[{ label: '2022', value: '2022' }]} 
+                callback={updateConfig}
+                disabled
+            />
+        </div>
+        <div>
+            <Select 
+                bind:value={localConfig.county}
+                options={[{ label: 'Alle fylker', value: undefined }, ...counties.map(c => ({ label: c[0], value: c[1] }))]} 
+                callback={updateConfig} 
+            />
+            <Select 
+                bind:value={localConfig.municipality}
+                options={[
+                    { label: 'Alle kommuner', value: undefined }, 
+                    ...filteredMunicipalities.map(m => ({ label: m[0], value: m[1] }))
+                ]} 
+                callback={updateConfig}
+            />
+        </div>
+        <div>
+            <Select 
+                bind:value={localConfig.type}
+                options={selectableCodes.map(c => ({ label: c[1], value: c[0] }))} 
+                callback={updateConfig}
+            />
+        </div>
+        <div>
+            <input class:active={localConfig.name} type="text" placeholder="Søk på navn" bind:value={localConfig.name}>
+            <input type="submit" value="Søk" on:click|preventDefault={updateConfig}>
+        </div>
+        <div>
+            <input type="submit" class="reset" value="Tilbakestill" on:click={() => { reset() }}>
+        </div>
     </div>
 </form>
 
 <style>
-form {
-    padding-block: 20px 30px;
-    border: 3px solid #eee;
-    border-radius: 5px;
-}
 .navigation {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    gap: 18px;
+    gap: 1rem;
 }
-select, input {
-    display: block;
-    border: none;
-    border-bottom: 3px solid #ccc;
-    padding: 5px 5px 5px 0;
-    font-size: 1rem;
-    color: #666;
-    outline: none;
+.navigation > div {
+    display: flex;
+    gap: 1rem;
+    width: fit-content;
 }
-.active {
-    border-color: #406619;
-    color: black;
-}
-select, input[type=submit] {
-    cursor: pointer;
+input[type=text] {
+    all: unset;
+    flex: 1;
+    min-width: 300px;
+    border-bottom: 2px solid var(--TLAccentColorFull);
 }
 input[type=submit] {
-    border: 3px solid #ccc;
+    all: unset;
+    padding: var(--TLButtonPadding);
+    border: 2px solid var(--TLAccentColorLight);
+    border-radius: var(--TLButtonBorderRadius);
+    background: var(--TLAccentColorLight);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+input[type=submit]:hover {
+    background: var(--TLAccentColorFull);
+    border-color: var(--TLAccentColorFull);
+    color: black;
+}
+input.reset {
+    border-color: black;
     background: white;
-    padding-inline: 10px;
-    border-radius: 3px;
-}
-select:hover, input[type=submit]:hover, input[type=text]:focus {
-    filter: brightness(1.1);
-}
-select:disabled {
-    cursor: not-allowed;
-    border-bottom-style: dotted;
-}
-input::placeholder {
-    color: #666;
-    opacity: .7;
 }
 </style>

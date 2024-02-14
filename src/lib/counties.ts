@@ -1,4 +1,4 @@
-export const counties = [
+export const counties: [name: string, code: string][] = [
     ["Agder","42"],
     ["Innlandet","34"],
     ["Møre og Romsdal","15"],
