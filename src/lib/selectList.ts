@@ -1,8 +1,8 @@
 export const selectableCodes: [code: string, textShort: string, textLong: string, unit: string ][] = [
     ["sum_produksjons_og_avloesertilskudd", "Sum tilskudd", "Sum produksjons- og avløsertilskudd", "kr"],
-    ["p120_vaar", "Melk, ku", "Melkekyr (vår)", "antall"],
-    ["p139_vaar", "Melk, sau", "Melkesau, født i fjor eller tidligere (vår)", "antall"],
-    ["p140_vaar", "Melk, geit", "Melkegeiter", "antall"],
+    ["p120_vaar", "Melk, ku", "Melkekyr (vår)", "dyr"],
+    ["p139_vaar", "Melk, sau", "Melkesau, født i fjor eller tidligere (vår)", "dyr"],
+    ["p140_vaar", "Melk, geit", "Melkegeiter", "dyr"],
     ["p272", "Epler", "Epler", "dekar"],
     ["p273", "Pærer", "Pærer", "dekar"],
     ["p280", "Jordbær", "Jordbær", "dekar"],

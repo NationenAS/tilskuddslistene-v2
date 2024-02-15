@@ -11,7 +11,7 @@ let localConfig: Config = { ...$configStore };
 
 const updateConfig = () => {
     // If municipality, set county
-    if (localConfig.municipality != $configStore.municipality) {
+    if (localConfig.municipality != $configStore.municipality && localConfig.municipality != undefined) {
         localConfig.county = municipalities.find(e => e[1] == localConfig.municipality)?.[2] || undefined;
     }
     // If county, reset municipality
@@ -22,6 +22,7 @@ const updateConfig = () => {
     else if (localConfig.type != $configStore.type) {
         localConfig.unit = selectableCodes.find(c => c[0] == localConfig.type)?.[3] || undefined
     }
+    if (localConfig.name == '') localConfig.name = undefined
     $configStore = { ...localConfig }
 }
 
@@ -31,8 +32,6 @@ const reset = () => {
 }
 
 $: filteredMunicipalities = $configStore.county == undefined ? municipalities : municipalities.filter(m => m[2] == $configStore.county)
-
-$: console.log(localConfig)
 
 </script>
 

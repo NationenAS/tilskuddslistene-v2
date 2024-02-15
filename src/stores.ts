@@ -36,7 +36,12 @@ export const dataStore: Writable<AgriculturalSubsidy[]> = writable([])
 export const totals = derived([dataStore, configStore], ([$dataStore, $configStore]) => {
   const count = $dataStore.length
   const sum = $dataStore.reduce((a, b) => {
-    return a + Number(b[$configStore.type])
-  }, 0)
-  return { count, sum };
+    a.cash = a.cash + Number(b['sum_produksjons_og_avloesertilskudd'])
+    a.sum = a.sum + Number(b[$configStore.type])
+    return a
+  }, {
+    sum: 0,
+    cash: 0
+  })
+  return { count, sum: sum.sum, cash: sum.cash };
 })

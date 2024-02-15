@@ -17,7 +17,7 @@ let map,
     // renderer = L.canvas({ padding: 10 })
 
 const minRadius = 1.2
-const maxRadius = 5
+const maxRadius = 4
 const color = [90, 61]
 
 function getMinMax() {
