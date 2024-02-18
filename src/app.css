@@ -1,16 +1,16 @@
-body {
-    overflow-x: hidden;
-}
 #Tilskuddslistene {
     --TLAccentHue: 30deg;
     --TLAccentColorFull: hsl(var(--TLAccentHue), 100%, 50%);
+    --TLAccentColorBackground: hsl(var(--TLAccentHue), 100%, 95%);
     --TLAccentColorLight: hsl(var(--TLAccentHue), 100%, 80%);
+    --TLAccentColorDark: hsl(var(--TLAccentHue), 100%, 20%);
     --TLButtonBorderRadius: 99px;
     --TLButtonPadding: 0.5em 1em;
+    --TLBoxBorderRadius: 3px;
 
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 #Tilskuddslistene * {
     box-sizing: border-box;

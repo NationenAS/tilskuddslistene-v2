@@ -3,10 +3,11 @@
 import Spinner from "./Spinner.svelte"
 import Navigation from "./Navigation.svelte"
 import Map from "./Map.svelte"
+import I from "./icons/I.svelte"
 import { municipalities } from "./lib/municipalities"
 import { productionCodes } from "./lib/productionCodes"
 import { configStore, dataStore, totals } from "./stores"
-import type { Config } from "./stores"
+import type { Config, AgriculturalSubsidy } from "./stores"
 
 const endpoint = 'https://services.api.no/api/acies/v1/custom/AgriculturalSubsidy?'
 
@@ -25,14 +26,14 @@ let fetching = false,
     map: any
 
 const updateListData = (length: number) => {
-    listData = $dataStore.sort((a,b) => +b[$configStore.type] - +a[$configStore.type]).slice(0, length)
+    listData = $dataStore.slice(0, length)
 }
-const getNextElements = () => {
-    let left = $dataStore.length - listLength
+const expandList = () => {
+    const left = $totals.count - listLength
     listLength += left >= nextLength ? nextLength : left
 }
 const getMunicipality = (number: string): string | undefined => {
-    let m = municipalities.find(e => e[1] == number)
+    const m = municipalities.find(e => e[1] == number)
     return m ? m[0]: undefined
 }
 const reset = () => {
@@ -41,18 +42,30 @@ const reset = () => {
     listLength = 0
     uniqueData = {}
 }
+const getSum = (row: AgriculturalSubsidy, codes: string[]) => {
+    let sum = 0
+    for (const code of codes) {
+        sum = sum + Number(row[code])
+    }
+    return { ...row, sum } 
+}
 const updateQuery = (config: Config) => {
 
     reset()
     console.table(config)
     const params = new URLSearchParams()
-    params.append('sortBy', config.type)
-    params.append('fields', `(id,orgnavn,saksbehandlende_kommune,geometry,sum_produksjons_og_avloesertilskudd,${config.type})`)
+    params.append('fields', `(id,orgnavn,saksbehandlende_kommune,geometry,${config.codes.join(',')})`)
     params.append('limit', config.limit.toString())
-    params.append('greaterThan', `${config.type}:0`)
-    if (config.municipality != undefined) params.append('equal', `saksbehandlende_kommune:${config.municipality}`)
-    else if (config.county != undefined) params.append('equal', `county:${config.county}`)
-    if (config.name != undefined) params.append('q', `orgnavn:${config.name}`)
+    // // If only one code, sort by that, or else we need to get the whole list and sort it client side
+    // if (config.codes.length == 1) params.append('sortBy', config.codes[0])
+    const codeClauses = config.codes.map(c => `${c}:0`).join('|')
+    params.append('greaterThan', codeClauses)
+    if (config.municipality != undefined) 
+        params.append('equal', `saksbehandlende_kommune:${config.municipality}`)
+    else if (config.county != undefined) 
+        params.append('equal', `county:${config.county}`)
+    if (config.name != undefined) 
+        params.append('q', `orgnavn:${config.name}`)
 
     fetching = true
     let start = performance.now()
@@ -63,8 +76,8 @@ const updateQuery = (config: Config) => {
             console.log("Fetch size:", Number(r.headers.get("content-length"))/1000 + " kB")
             return r.json()
         })
-        .then(d => {
-            $dataStore = d
+        .then((d: AgriculturalSubsidy[]) => {
+            $dataStore = [...d.map((row) => getSum(row, config.codes)).sort((a, b) => b.sum - a.sum)];
             listLength = 10 // This will trigger updateListData
             fetching = false
             console.log("Hits:", d.length)
@@ -111,7 +124,8 @@ function toggleInfo(id: string) {
 
 </script>
 
-<h2>Tilskuddslistene</h2>
+
+<h2>Tilskuddslistene {$configStore.year}</h2>
 
 <Navigation />
 
@@ -119,29 +133,25 @@ function toggleInfo(id: string) {
 <Spinner />
 
 {:else if $totals.count == 0}
-<div class="items-count">Ingen oppføringer</div>
+<div class="no-items">Ingen oppføringer</div>
 
 {:else if $totals.count > 0}
-<div>
-    <span>Antall mottakere: {$totals.count.toLocaleString('nb-NO')}.</span>
-    {#if $configStore.type != 'sum_produksjons_og_avloesertilskudd'}
-    <span>
-        Totalt {$totals.sum.toLocaleString('nb-NO', {
-            notation: "compact",
-            compactDisplay: "long"
-        })} {$configStore.unit}.
-    </span>
+<div class="search-info">
+    {#if $totals.count == $configStore.limit}
+        <I size="1.1rem" />Det er mange treff i søket, viser kun de første { $configStore.limit.toLocaleString('nb-NO') }.
+    {:else if $totals.count > 0}
+        <span>Antall mottakere: {$totals.count.toLocaleString('nb-NO')}.</span>
+        <span>
+            Totalt {$totals.sum.toLocaleString('nb-NO', {
+                notation: "compact",
+                compactDisplay: "long"
+            })} {$configStore.unit}.
+        </span>
     {/if}
-    <span>
-        Totalt {$totals.cash.toLocaleString('nb-NO', {
-            notation: "compact",
-            compactDisplay: "long"
-        })} kr.
-    </span>
 </div>
 
 <div class="result-container">
-    <Map data={$dataStore} config={$configStore} bind:this={map} />
+    <Map data={$dataStore} bind:this={map} />
     <div class="result-table">
         <div class="result-row result-header">
             <div>Navn</div>
@@ -152,7 +162,7 @@ function toggleInfo(id: string) {
         <div class="result-row" class:expanded={uniqueData.id == item.id} on:click={() => { toggleInfo(item.id) }} on:keypress={() => { toggleInfo(item.id) }}>
             <div>{item.orgnavn}</div>
             <div>{getMunicipality(item.saksbehandlende_kommune)}</div>
-            <div class="result-sum">{ item[$configStore.type].toLocaleString('nb-NO') }</div>
+            <div class="result-sum">{ item.sum.toLocaleString('nb-NO') }</div>
             {#if uniqueData.id == item.id}
             <div class="info">
                 <div class="info-header">
@@ -173,7 +183,7 @@ function toggleInfo(id: string) {
         </div>
         {/each}
         {#if listData.length < $totals.count}
-        <div class="result-more" on:click={() => { getNextElements() }} on:keypress={() => { getNextElements() }}>Se flere</div>
+        <div class="result-more" on:click={() => { expandList() }} on:keypress={() => { expandList() }}>Se flere</div>
         {/if}
     </div>
 </div>
@@ -187,9 +197,17 @@ h2 {
 .no-items {
     margin-top: 1.5rem;
 }
+.search-info {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-weight: 100;
+    /* background: var(--TLAccentColorBackground);
+    padding: 1rem;
+    border-radius: var(--TLBoxBorderRadius); */
+}
 .result-container {
     position: relative;   
-    margin-top: 1.5rem;
 }
 .result-table {
     margin-top: 1em;
@@ -228,6 +246,7 @@ h2 {
 }
 .result-sum {
     text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 .result-more {
     text-align: center;

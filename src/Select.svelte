@@ -61,6 +61,7 @@
     appearance: none;
     color: #333;
     cursor: pointer;
+    user-select: none;
   }
   .select .chevron {
     pointer-events: none;

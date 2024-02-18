@@ -1,16 +1,18 @@
 import { writable, derived } from 'svelte/store'
 import type { Writable } from 'svelte/store'
+import { selectableCodes } from './lib/codes'
 
 export interface AgriculturalSubsidy {
-  saksbehandlende_kommune: string,
-  [key: string]: string | number
+  sum: number;
+  [key: string]: string | number;
 }
 
 export interface Config {
   municipality: string | undefined,
   county: string | undefined,
   name: string | undefined,
-  type: string,
+  type: string | undefined,
+  codes: string[],
   year: string,
   limit: number,
   unit: string | undefined
@@ -21,9 +23,10 @@ export const defaultConfig: Config = {
   municipality: undefined,
   county: undefined,
   name: undefined,
-  type: "sum_produksjons_og_avloesertilskudd",
+  type: undefined,
+  codes: ['sum_produksjons_og_avloesertilskudd'],
   year: "2022",
-  limit: 99999,
+  limit: 1000,
   unit: "kr"
 }
 
@@ -33,15 +36,10 @@ export const configStore: Writable<Config> = writable({
 
 export const dataStore: Writable<AgriculturalSubsidy[]> = writable([])
 
-export const totals = derived([dataStore, configStore], ([$dataStore, $configStore]) => {
+export const totals = derived([dataStore], ([$dataStore]) => {
   const count = $dataStore.length
-  const sum = $dataStore.reduce((a, b) => {
-    a.cash = a.cash + Number(b['sum_produksjons_og_avloesertilskudd'])
-    a.sum = a.sum + Number(b[$configStore.type])
-    return a
-  }, {
-    sum: 0,
-    cash: 0
-  })
-  return { count, sum: sum.sum, cash: sum.cash };
+  const sum = $dataStore.reduce((a, c) => {
+    return a + c.sum;
+  }, 0);
+  return { count, sum };
 })

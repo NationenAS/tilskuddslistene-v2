@@ -3,7 +3,6 @@
 import * as L from "leaflet"
 
 export let data
-export let config
 export function zoomToPoint(id) {
     console.log("Zoom to " + id)
     map.setView(markers[id].getLatLng(), 15)
@@ -21,7 +20,7 @@ const maxRadius = 4
 const color = [90, 61]
 
 function getMinMax() {
-    let d = data.map(d => d[config.type])
+    let d = data.map(d => d.sum)
     let min = Math.min(...d)
     let max = Math.max(...d)
     let specter = max-min
@@ -29,11 +28,11 @@ function getMinMax() {
 }
 
 function getSize(point) {
-    let r = (point[config.type] - minMax.min) / minMax.specter
+    let r = (point.sum - minMax.min) / minMax.specter
     return {
         r: r,
-        // radius: r * (maxRadius - minRadius) + minRadius,
-        radius: 1.2,
+        radius: r * (maxRadius - minRadius) + minRadius,
+        // radius: 1.2,
         color: `hsl(${color[0]}, ${color[1]}%, ${Math.round((1 - r) * 25 + 20)}%)`
     }
 }
@@ -106,7 +105,7 @@ function createMap(container) {
 .map {
     height: 500px;
     outline: none;
-    border-radius: 5px;
+    border-radius: var(--TLBoxBorderRadius);
 }
 .legend {
     position: absolute;

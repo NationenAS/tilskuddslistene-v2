@@ -3,9 +3,11 @@
 import Select from "./Select.svelte";
 import { counties } from "./lib/counties"
 import { municipalities } from "./lib/municipalities"
-import { selectableCodes } from "./lib/selectList";
+// import { selectableCodes } from "./lib/selectList";
+import { selectableCodes } from "./lib/codes";
 import { defaultConfig, configStore } from "./stores"
 import type { Config } from "./stores";
+    import I from "./icons/I.svelte";
 
 let localConfig: Config = { ...$configStore };
 
@@ -18,9 +20,16 @@ const updateConfig = () => {
     else if (localConfig.county != $configStore.county) {
         localConfig.municipality = undefined
     }
-    // If type, set unit
+    // If type, set codes and unit
     else if (localConfig.type != $configStore.type) {
-        localConfig.unit = selectableCodes.find(c => c[0] == localConfig.type)?.[3] || undefined
+        if (localConfig.type == undefined) {
+            localConfig.codes = defaultConfig.codes
+            localConfig.unit = defaultConfig.unit
+        }
+        else {
+            localConfig.codes = selectableCodes.find(c => c.id == localConfig.type)?.codes || []
+            localConfig.unit = selectableCodes.find(c => c.id == localConfig.type)?.unit || undefined
+        }
     }
     if (localConfig.name == '') localConfig.name = undefined
     $configStore = { ...localConfig }
@@ -37,15 +46,28 @@ $: filteredMunicipalities = $configStore.county == undefined ? municipalities : 
 
 <form>
     <div class="navigation">
-        <div>
+        <fieldset>
+            <legend>Tilskuddsår</legend>
             <Select 
                 value={localConfig.year}
                 options={[{ label: '2022', value: '2022' }]} 
                 callback={updateConfig}
                 disabled
             />
-        </div>
-        <div>
+        </fieldset>
+        <fieldset>
+            <legend>Produksjon</legend>
+            <Select 
+                bind:value={localConfig.type}
+                options={[
+                    { label: 'Alle typer', value: undefined },
+                    ...selectableCodes.map(c => ({ label: c.textShort, value: c.id }))
+                ]} 
+                callback={updateConfig}
+            />
+        </fieldset>
+        <fieldset>
+            <legend>Geografi</legend>
             <Select 
                 bind:value={localConfig.county}
                 options={[{ label: 'Alle fylker', value: undefined }, ...counties.map(c => ({ label: c[0], value: c[1] }))]} 
@@ -59,21 +81,15 @@ $: filteredMunicipalities = $configStore.county == undefined ? municipalities : 
                 ]} 
                 callback={updateConfig}
             />
-        </div>
-        <div>
-            <Select 
-                bind:value={localConfig.type}
-                options={selectableCodes.map(c => ({ label: c[1], value: c[0] }))} 
-                callback={updateConfig}
-            />
-        </div>
-        <div>
-            <input class:active={localConfig.name} type="text" placeholder="Søk på navn" bind:value={localConfig.name}>
-            <input type="submit" value="Søk" on:click|preventDefault={updateConfig}>
-        </div>
-        <div>
+        </fieldset>
+        <fieldset>
+            <legend>Navn på foretak</legend>
+            <div class="text-submit">
+                <input class:active={localConfig.name} type="text" placeholder="Søk på navn" bind:value={localConfig.name}>
+                <input class="search" type="submit" value="Søk" on:click|preventDefault={updateConfig}>
+            </div>
             <input type="submit" class="reset" value="Tilbakestill" on:click={() => { reset() }}>
-        </div>
+        </fieldset>
     </div>
 </form>
 
@@ -81,21 +97,45 @@ $: filteredMunicipalities = $configStore.county == undefined ? municipalities : 
 .navigation {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.3rem;
 }
-.navigation > div {
+fieldset {
+    all: unset;
     display: flex;
-    gap: 1rem;
-    width: fit-content;
+    gap: 0.8rem;
+}
+legend {
+    margin-bottom: 0.4rem;
+    font-size: 0.9em;
+    font-weight: 100;
+    color: #333;
+}
+fieldset .info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9em;
+}
+input {
+    user-select: none;
+    color: #333;
+}
+.text-submit {
+    position: relative;
+    display: flex;
+    gap: 0.5rem;
+    border: 2px solid var(--TLAccentColorLight);
+    border-radius: var(--TLButtonBorderRadius); 
 }
 input[type=text] {
     all: unset;
     flex: 1;
-    min-width: 300px;
-    border-bottom: 2px solid var(--TLAccentColorFull);
+    min-width: 15rem;
+    padding: var(--TLButtonPadding);
 }
 input[type=submit] {
     all: unset;
+    color: #333;
     padding: var(--TLButtonPadding);
     border: 2px solid var(--TLAccentColorLight);
     border-radius: var(--TLButtonBorderRadius);
@@ -103,13 +143,19 @@ input[type=submit] {
     cursor: pointer;
     transition: all 0.2s;
 }
+input[type=submit].search {
+    position: absolute;
+    right: -2px;
+    top: -2px;
+}
 input[type=submit]:hover {
-    background: var(--TLAccentColorFull);
-    border-color: var(--TLAccentColorFull);
+    border-color: black;
     color: black;
 }
-input.reset {
+input[type=submit]:focus {
     border-color: black;
+}
+input.reset {
     background: white;
 }
 </style>
