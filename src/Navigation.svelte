@@ -102,6 +102,7 @@ fieldset {
     all: unset;
     display: flex;
     gap: 0.8rem;
+    flex-wrap: wrap;
 }
 legend {
     margin-bottom: 0.3rem;

@@ -213,10 +213,6 @@ h2 {
     display: flex;
     align-items: center;
     gap: 0.5em;
-    font-weight: 100;
-    /* background: var(--TLAccentColorBackground);
-    padding: 1rem;
-    border-radius: var(--TLBoxBorderRadius); */
 }
 .result-container {
     position: relative;   
