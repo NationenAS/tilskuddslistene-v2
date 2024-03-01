@@ -7,7 +7,6 @@ import { municipalities } from "./lib/municipalities"
 import { selectableCodes } from "./lib/codes";
 import { defaultConfig, configStore } from "./stores"
 import type { Config } from "./stores";
-    import I from "./icons/I.svelte";
 
 let localConfig: Config = { ...$configStore };
 
@@ -55,7 +54,7 @@ $: filteredMunicipalities = $configStore.county == undefined ? municipalities : 
                 disabled
             />
         </fieldset>
-        <fieldset>
+        <!-- <fieldset>
             <legend>Produksjon</legend>
             <Select 
                 bind:value={localConfig.type}
@@ -65,7 +64,7 @@ $: filteredMunicipalities = $configStore.county == undefined ? municipalities : 
                 ]} 
                 callback={updateConfig}
             />
-        </fieldset>
+        </fieldset> -->
         <fieldset>
             <legend>Geografi</legend>
             <Select 
@@ -84,7 +83,7 @@ $: filteredMunicipalities = $configStore.county == undefined ? municipalities : 
         </fieldset>
         <fieldset>
             <legend>Navn på foretak</legend>
-            <div class="text-submit">
+            <div class="text-submit" class:active={$configStore.name}>
                 <input class:active={localConfig.name} type="text" placeholder="Søk på navn" bind:value={localConfig.name}>
                 <input class="search" type="submit" value="Søk" on:click|preventDefault={updateConfig}>
             </div>
@@ -105,33 +104,32 @@ fieldset {
     gap: 0.8rem;
 }
 legend {
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.3rem;
     font-size: 0.9em;
     font-weight: 100;
     color: #333;
-}
-fieldset .info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9em;
 }
 input {
     user-select: none;
     color: #333;
 }
 .text-submit {
-    position: relative;
     display: flex;
-    gap: 0.5rem;
-    border: 2px solid var(--TLAccentColorLight);
-    border-radius: var(--TLButtonBorderRadius); 
 }
 input[type=text] {
     all: unset;
     flex: 1;
-    min-width: 15rem;
+    border: 2px solid var(--TLAccentColorLight);
+    border-radius: var(--TLButtonBorderRadius) 0 0 var(--TLButtonBorderRadius); 
     padding: var(--TLButtonPadding);
+}
+.text-submit.active input[type=text] {
+    border-color: var(--TLAccentColorFull);
+    z-index: 2;
+}
+.text-submit.active input[type=submit] {
+    background: var(--TLAccentColorFull);
+    border-color: var(--TLAccentColorFull);
 }
 input[type=submit] {
     all: unset;
@@ -144,15 +142,13 @@ input[type=submit] {
     transition: all 0.2s;
 }
 input[type=submit].search {
-    position: absolute;
-    right: -2px;
-    top: -2px;
+    border-radius: 0 var(--TLButtonBorderRadius) var(--TLButtonBorderRadius) 0;
+    margin-left: -2px;
+    padding-left: 1rem;
 }
-input[type=submit]:hover {
-    border-color: black;
-    color: black;
-}
-input[type=submit]:focus {
+input:focus,
+input:hover {
+    z-index: 100;
     border-color: black;
 }
 input.reset {

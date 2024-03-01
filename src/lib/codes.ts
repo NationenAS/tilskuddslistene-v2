@@ -25,5 +25,20 @@ export const selectableCodes: {
         textShort: "Bær",
         textLong: "Jordbær, moreller og kirsebær, andre bærarter",
         unit: "dekar"
+    },
+    {
+        id: 'grains',
+        codes: ['p238', 'p239', 'p240', 'p242', 'p243', 'p247'],
+        textShort: "Kønn",
+        textLong: "Bygg, havre, hvete, rug, andre kornarter",
+        unit: "dekar"
+    },
+    {
+        id: 'autumnWheat',
+        codes: ['p247'],
+        textShort: "Høsthvete",
+        textLong: "Høsthvete",
+        unit: "dekar"
     }
+
 ]

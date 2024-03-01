@@ -26,7 +26,7 @@ export const defaultConfig: Config = {
   type: undefined,
   codes: ['sum_produksjons_og_avloesertilskudd'],
   year: "2022",
-  limit: 1000,
+  limit: 5000,
   unit: "kr"
 }
 

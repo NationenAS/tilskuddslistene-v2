@@ -20,7 +20,7 @@
     document.body.appendChild(temp);
     select.style.width = `calc(${
       temp.getClientRects().item(0)?.width
-    }px +  3em)`;
+    }px +  3.5rem)`;
     temp.remove();
   };
 
@@ -52,6 +52,7 @@
   }
 
   .select select {
+    all: unset;
     border: 2px solid var(--TLAccentColorLight);
     padding: var(--TLButtonPadding);
     border-radius: var(--TLButtonBorderRadius);
@@ -85,7 +86,9 @@
     stroke: black;
   }
   .select:not(.disabled):hover select,
-  .select:hover .chevron {
+  select:focus,
+  .select:hover .chevron,
+  .select:has(select:focus) .chevron {
     border-color: black;
     stroke: black;
     color: black;
