@@ -15,8 +15,10 @@ const endpoint = 'https://services.api.no/api/acies/v1/custom/AgriculturalSubsid
 let listData: any[] = []
 
 // Unique
-let uniqueData: any = {}, 
-    lastUniqueData: any = {},
+let uniqueData: any[] = [],
+    uniqueOrgnr: string,
+    lastUniqueData: any[] = [],
+    lastUniqueOrgnr: string,
     relevantCodes: any[] = []
 
 // UI
@@ -43,7 +45,8 @@ const reset = () => {
     $dataStore = []
     listData = []
     listLength = 0
-    uniqueData = {}
+    uniqueData = []
+    uniqueOrgnr = ""
 }
 const getSum = (row: AgriculturalSubsidy, codes: string[]) => {
     let sum = 0
@@ -57,7 +60,7 @@ const updateQuery = (config: Config) => {
     reset()
     console.table(config)
     const params = new URLSearchParams()
-    params.append('fields', `(id,orgnavn,soeknads_aar,saksbehandlende_kommune,geometry,${config.codes.join(',')})`)
+    params.append('fields', `(id,orgnavn,orgnr,avloesertilskudd,soeknads_aar,saksbehandlende_kommune,geometry,${config.codes.join(',')})`)
     params.append('limit', config.limit.toString())
     // // If only one code, sort by that, or else we need to get the whole list and sort it client side
     if (config.codes.length == 1) params.append('sortBy', config.codes[0])
@@ -97,8 +100,9 @@ $: updateListData(listLength)
 
 function getProduction() {
     relevantCodes = []
-    for (const code in uniqueData) {        
-        let value = uniqueData[code]                                    // Loop though production codes in fetch result
+    const thisYear = uniqueData.find(e => e.soeknads_aar == $configStore.year)
+    for (const code in thisYear) {
+        let value = thisYear[code]                                    // Loop though production codes in fetch result
         if (code.startsWith("p") && value > 0) {                        // Get code if has production
             let details = productionCodes.find(e => e[0] == code)       // Get details from productionCodes.js
             if (details) {                                              // If found in productionCodes.js, add to array
@@ -115,16 +119,31 @@ function getProduction() {
     }
 }
 
-function toggleInfo(id: string) { 
-    if (id == uniqueData.id) { lastUniqueData = uniqueData; uniqueData = {}; return }
-    if (id == lastUniqueData.id) { uniqueData = lastUniqueData; return } // Prevent data fetch if user re-opens last expanded item
-    let params = `limit=1&equal=id:${id}`
+function toggleInfo(orgnr: string) { 
+    console.log(orgnr)
+    // Clicked on same item
+    if (orgnr == uniqueOrgnr) { 
+        lastUniqueData = uniqueData; 
+        lastUniqueOrgnr = uniqueOrgnr;
+        uniqueData = [];
+        uniqueOrgnr = ""; 
+        return ;
+    }
+    // Clicked on last expanded item
+    if (orgnr == lastUniqueOrgnr ) { 
+        uniqueData = lastUniqueData;
+        uniqueOrgnr = lastUniqueOrgnr;
+        return 
+    }
+    let params = `limit=2&equal=orgnr:${orgnr}`
     console.log("Fetching unique: " + endpoint + params)
     fetch(endpoint + params)
         .then(r => r.json())
         .then(d => {
-            uniqueData = d[0]
+            uniqueData = d
+            uniqueOrgnr = orgnr
             getProduction()
+            console.log(d)
         })
 }
 
@@ -175,18 +194,46 @@ function toggleInfo(id: string) {
             </div>
         </div>
         {#each listData as item (item.id)}
-        <div class="result-row" class:expanded={uniqueData.id == item.id} on:click={() => { toggleInfo(item.id) }} on:keypress={() => { toggleInfo(item.id) }}>
+        <div class="result-row" class:expanded={uniqueOrgnr == item.orgnr} on:click={() => { toggleInfo(item.orgnr) }} on:keypress={() => { toggleInfo(item.orgnr) }}>
             <div>{item.orgnavn}</div>
             <div>{getMunicipality(item.saksbehandlende_kommune)}</div>
             <div class="result-sum">{ item.sum.toLocaleString('nb-NO') }</div>
-            {#if uniqueData.id == item.id}
+            {#if uniqueOrgnr == item.orgnr}
             <div class="info">
                 <div class="info-header">
                     <div>
-                        <p><span>Org.nr:</span> {uniqueData.orgnr}</p>
-                        <p><span>Totalt areal:</span> {uniqueData.totalareal} dekar</p>
+                        <p><span>Org.nr:</span> {uniqueData[0].orgnr}</p>
+                        <p><span>Totalt areal:</span> {uniqueData.find(year => year.soeknads_aar == $configStore.year).totalareal} dekar</p>
                     </div>
-                    <div on:click={() => { map.zoomToPoint(uniqueData.id) }} on:keypress={() => { map.zoomToPoint(uniqueData.id) }}><svg viewBox="0 0 23 33.6"><path d="M11.5,0c6.3-.1,12,6.1,11.5,12.5-.1,3.2-2,5.8-3.5,8.5-2.1,3.7-6.7,11.8-7,12.1-.5,.8-1.7,.7-2.1,0-.5-.9-5.8-10-7.9-13.7C1.3,17.3,.1,15,0,12.6-.5,6.2,5.1,0,11.5,0c0,0,0,0,0,0ZM6.4,12c0,2.9,2.3,5,4.8,5.1,7.2,0,7.2-10.2,.2-10.3-2.6,0-5,2.3-5,5.1Z"></path></svg><u>Se gården på kart</u></div>
+                    <div on:click={() => { map.zoomToPoint(uniqueData.find(year => year.soeknads_aar == $configStore.year).id) }} on:keypress={() => { map.zoomToPoint(uniqueData.find(year => year.soeknads_aar == $configStore.year).id) }}><svg viewBox="0 0 23 33.6"><path d="M11.5,0c6.3-.1,12,6.1,11.5,12.5-.1,3.2-2,5.8-3.5,8.5-2.1,3.7-6.7,11.8-7,12.1-.5,.8-1.7,.7-2.1,0-.5-.9-5.8-10-7.9-13.7C1.3,17.3,.1,15,0,12.6-.5,6.2,5.1,0,11.5,0c0,0,0,0,0,0ZM6.4,12c0,2.9,2.3,5,4.8,5.1,7.2,0,7.2-10.2,.2-10.3-2.6,0-5,2.3-5,5.1Z"></path></svg><u>Se gården på kart</u></div>
+                </div>
+                <div class="info-summary">
+                    <div>
+                        <div>
+                            <div>{$configStore.year}</div>
+                            <div>Sum produksjons- og avløsertilskudd</div>
+                            <div>{ item.sum_produksjons_og_avloesertilskudd.toLocaleString('nb-NO') }</div>
+                        </div>
+                        <div>
+                            <div></div>
+                            <div>&mdash; Hvorav avløsertilskudd</div>
+                            <div>{ item.avloesertilskudd.toLocaleString('nb-NO') }</div>
+                        </div>
+                    </div>
+                    {#if $configStore.year != '2022' && uniqueData.find(year => year.soeknads_aar == '2022')}
+                    <div>
+                        <div>
+                            <div>2022</div>
+                            <div>Sum produksjons- og avløsertilskudd</div>
+                            <div>{ uniqueData.find(year => year.soeknads_aar == '2022').sum_produksjons_og_avloesertilskudd.toLocaleString('nb-NO') }</div>
+                        </div>
+                        <div>
+                            <div></div>
+                            <div>&mdash; Hvorav avløsertilskudd</div>
+                            <div>{ uniqueData.find(year => year.soeknads_aar == '2022').avloesertilskudd.toLocaleString('nb-NO') }</div>
+                        </div>
+                    </div>
+                    {/if}
                 </div>
                 <h4>Utdrag av produksjon</h4>
                 <div class="info-details">
@@ -197,6 +244,7 @@ function toggleInfo(id: string) {
                         </div>
                     {/each}
                 </div>
+                <div class="info-disclaimer">Vi tar forbehold om at listen ikke er fullstendig.</div>
             </div>
             {/if}
         </div>
@@ -268,7 +316,6 @@ h2 {
     cursor: pointer;
 }
 .info {
-    font-size: .9em;
     grid-column: 1/-1;
     padding: 1rem 0 0.5rem;
 }
@@ -283,6 +330,24 @@ h2 {
 .info p span {
     font-weight: 500;
 }
+.info-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+.info-summary > div {
+    padding: 0.4rem;
+    background: #eee;
+}
+.info-summary > div > div {
+    display: grid;
+    grid-template-columns: 3rem 1fr 6rem;
+}
+.info-summary > div > div > div:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
 h4 {
     font-size: 1.05em;
     margin-block: .8em .7em;
@@ -290,6 +355,7 @@ h4 {
 .info-details {
     display: flex;
     flex-wrap: wrap;
+    font-size: 0.9rem;
     gap: 6px;
 }
 .info-details > div {
@@ -303,11 +369,16 @@ h4 {
     min-width: 25%;
     text-align: right;
 }
+.info-disclaimer {
+    margin-top: 0.5rem;
+    font-size: .8em;
+    color: #666;
+}
 .info svg {
     height: 1em;
     margin-right: .5em;
 }
-@media (max-width: 680px) {
+@media (max-width: 600px) {
     .result-row {
         grid-template-columns: 3fr 1fr;
     }
