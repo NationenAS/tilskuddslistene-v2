@@ -122,6 +122,11 @@ function createMap(container) {
     background: green;
     border-radius: 50%;
 }
+@media (max-width: 600px) {
+    .map {
+        height: 360px;
+    }
+}
 
 
 </style>
