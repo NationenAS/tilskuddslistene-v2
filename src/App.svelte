@@ -25,6 +25,9 @@ let fetching = false,
     listLength = 0,
     map: any
 
+// TEMP
+const nationaLimit = 5000
+
 const updateListData = (length: number) => {
     listData = $dataStore.sort((a, b) => b.sum - a.sum).slice(0, length)
 }
@@ -54,16 +57,20 @@ const updateQuery = (config: Config) => {
     reset()
     console.table(config)
     const params = new URLSearchParams()
-    params.append('fields', `(id,orgnavn,saksbehandlende_kommune,geometry,${config.codes.join(',')})`)
+    params.append('fields', `(id,orgnavn,soeknads_aar,saksbehandlende_kommune,geometry,${config.codes.join(',')})`)
     params.append('limit', config.limit.toString())
     // // If only one code, sort by that, or else we need to get the whole list and sort it client side
     if (config.codes.length == 1) params.append('sortBy', config.codes[0])
-    const codeClauses = config.codes.map(c => `${c}:0`).join('|')
-    params.append('greaterThan', codeClauses)
+    // const codeClauses = config.codes.map(c => `${c}:0`).join('|')
+    // params.append('greaterThan', codeClauses)
     if (config.municipality != undefined) 
-        params.append('equal', `saksbehandlende_kommune:${config.municipality}`)
+        params.append('equal', `saksbehandlende_kommune:${config.municipality};soeknads_aar:${config.year}`)
     else if (config.county != undefined) 
-        params.append('equal', `county:${config.county}`)
+        params.append('equal', `county:${config.county};soeknads_aar:${config.year}`)
+    else { 
+        params.append('equal', `soeknads_aar:${config.year}`)
+        params.set('limit', '5000')
+    }
     if (config.name != undefined) 
         params.append('q', `orgnavn:${config.name}`)
 
@@ -136,8 +143,8 @@ function toggleInfo(id: string) {
 
 {:else if $totals.count > 0}
 <div class="search-info">
-    {#if $totals.count == $configStore.limit}
-        <I size="1.1rem" />Det er mange treff i søket, viser kun de største { $configStore.limit.toLocaleString('nb-NO') } mottakere.
+    {#if $totals.count == nationaLimit}
+        <I size="1.1rem" />Det er mange treff i søket, viser kun de største { nationaLimit } mottakere. Filtrer på geografi for å se alle.
     {:else if $totals.count > 0}
         <span>Antall mottakere: {$totals.count.toLocaleString('nb-NO')}.</span>
         <span>

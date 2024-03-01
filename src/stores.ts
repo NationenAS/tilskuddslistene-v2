@@ -1,6 +1,5 @@
 import { writable, derived } from 'svelte/store'
 import type { Writable } from 'svelte/store'
-import { selectableCodes } from './lib/codes'
 
 export interface AgriculturalSubsidy {
   sum: number;
@@ -25,8 +24,8 @@ export const defaultConfig: Config = {
   name: undefined,
   type: undefined,
   codes: ['sum_produksjons_og_avloesertilskudd'],
-  year: "2022",
-  limit: 5000,
+  year: "2023",
+  limit: 99999,
   unit: "kr"
 }
 

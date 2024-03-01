@@ -48,10 +48,12 @@ $: filteredMunicipalities = $configStore.county == undefined ? municipalities : 
         <fieldset>
             <legend>Tilskuddsår</legend>
             <Select 
-                value={localConfig.year}
-                options={[{ label: '2022', value: '2022' }]} 
+                bind:value={localConfig.year}
+                options={[
+                    { label: '2023', value: '2023' },
+                    { label: '2022', value: '2022' }
+                ]} 
                 callback={updateConfig}
-                disabled
             />
         </fieldset>
         <!-- <fieldset>
