@@ -1,3 +1,8 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
 #Tilskuddslistene {
     --TLAccentHue: 30deg;
     --TLAccentColorFull: hsl(var(--TLAccentHue), 100%, 50%);
@@ -14,5 +19,40 @@
 }
 #Tilskuddslistene * {
     box-sizing: border-box;
-    font-family: 'National 2', 'Open Sans';
+    font-family: 'National2', 'Open Sans', sans-serif;
 }
+
+
+/* National2 */
+
+@font-face {
+    font-family: 'National2';
+    src: url('https://assets.acdn.no/pkg/@amedia/brick-fonts/1.5.0/fonts/charlie/national-2-light.woff2');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+  }
+  
+  @font-face {
+    font-family: 'National2';
+    src: url('https://assets.acdn.no/pkg/@amedia/brick-fonts/1.5.0/fonts/charlie/national-2-regular.woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  
+  @font-face {
+    font-family: 'National2';
+    src: url('https://assets.acdn.no/pkg/@amedia/brick-fonts/1.5.0/fonts/charlie/national-2-medium.woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+  
+  @font-face {
+    font-family: 'National2';
+    src: url('https://assets.acdn.no/pkg/@amedia/brick-fonts/1.5.0/fonts/charlie/national-2-bold.woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
