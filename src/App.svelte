@@ -277,7 +277,6 @@ h2 {
 .result-table {
     margin-top: 1em;
     position: relative;
-    overflow-y: scroll;
     flex: 1;
 }
 .result-row {
