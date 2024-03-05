@@ -31,7 +31,8 @@ let fetching = false,
 const nationaLimit = 5000
 
 const updateListData = (length: number) => {
-    listData = $dataStore.sort((a, b) => b.sum - a.sum).slice(0, length)
+    if (!$configStore.name) listData = $dataStore.sort((a, b) => b.sum - a.sum).slice(0, length);
+    else listData = $dataStore.slice(0, length)
 }
 const expandList = () => {
     const left = $totals.count - listLength
@@ -63,7 +64,7 @@ const updateQuery = (config: Config) => {
     params.append('fields', `(id,orgnavn,orgnr,avloesertilskudd,soeknads_aar,saksbehandlende_kommune,geometry,${config.codes.join(',')})`)
     params.append('limit', config.limit.toString())
     // // If only one code, sort by that, or else we need to get the whole list and sort it client side
-    if (config.codes.length == 1) params.append('sortBy', config.codes[0])
+    if (config.codes.length == 1 && !config.name) params.append('sortBy', config.codes[0])
     // const codeClauses = config.codes.map(c => `${c}:0`).join('|')
     // params.append('greaterThan', codeClauses)
     if (config.municipality != undefined) 
@@ -87,7 +88,8 @@ const updateQuery = (config: Config) => {
             return r.json()
         })
         .then((d: AgriculturalSubsidy[]) => {
-            $dataStore = [...d.map((row) => getSum(row, config.codes)).sort((a, b) => b.sum - a.sum)];
+            $dataStore = d.map((row) => getSum(row, config.codes));
+            if (!$configStore.name) $dataStore.sort((a, b) => b.sum - a.sum);
             listLength = 10 // This will trigger updateListData
             fetching = false
         }).catch(e => {
@@ -274,6 +276,9 @@ h2 {
 }
 .result-table {
     margin-top: 1em;
+    position: relative;
+    overflow-y: scroll;
+    flex: 1;
 }
 .result-row {
     display: grid;
@@ -294,6 +299,8 @@ h2 {
     font-size: 1rem;
     text-transform: uppercase;
     cursor: initial;
+    position: sticky;
+    top: 0;
 }
 .result-header .chevron {
     height: 0.6em;
