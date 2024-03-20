@@ -32,7 +32,7 @@ const nationaLimit = 5000
 
 const updateListData = (length: number) => {
     if (!$configStore.name) listData = $dataStore.sort((a, b) => b.sum - a.sum).slice(0, length);
-    else listData = $dataStore.slice(0, length)
+    else listData = $dataStore.sort((a, b) => (a.ix as number) - (b.ix as number)).slice(0, length)
 }
 const expandList = () => {
     const left = $totals.count - listLength
@@ -49,12 +49,12 @@ const reset = () => {
     uniqueData = []
     uniqueOrgnr = ""
 }
-const getSum = (row: AgriculturalSubsidy, codes: string[]) => {
+const transformRow = (row: AgriculturalSubsidy, ix: number, codes: string[]) => {
     let sum = 0
     for (const code of codes) {
         sum = sum + Number(row[code])
     }
-    return { ...row, sum } 
+    return { ...row, ix, sum } 
 }
 const updateQuery = (config: Config) => {
 
@@ -88,7 +88,7 @@ const updateQuery = (config: Config) => {
             return r.json()
         })
         .then((d: AgriculturalSubsidy[]) => {
-            $dataStore = d.map((row) => getSum(row, config.codes));
+            $dataStore = d.map((row, i) => transformRow(row, i, config.codes));
             if (!$configStore.name) $dataStore.sort((a, b) => b.sum - a.sum);
             listLength = 10 // This will trigger updateListData
             fetching = false
@@ -149,6 +149,16 @@ function toggleInfo(orgnr: string) {
         })
 }
 
+const highlightMatches = (reference: string, name: string): string => {
+  const words = reference.split(' ');
+  let output = name;
+  for (const word of words) {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    output = output.replace(regex, '<mark>$&</mark>');
+  };
+  return output;
+}
+
 </script>
 
 
@@ -197,7 +207,7 @@ function toggleInfo(orgnr: string) {
         </div>
         {#each listData as item (item.id)}
         <div class="result-row" class:expanded={uniqueOrgnr == item.orgnr} on:click={() => { toggleInfo(item.orgnr) }} on:keypress={() => { toggleInfo(item.orgnr) }}>
-            <div>{item.orgnavn}</div>
+            <div>{@html $configStore.name ? highlightMatches($configStore.name, item.orgnavn) : item.orgnavn}</div>
             <div>{getMunicipality(item.saksbehandlende_kommune)}</div>
             <div class="result-sum">{ item.sum.toLocaleString('nb-NO') }</div>
             {#if uniqueOrgnr == item.orgnr}
@@ -296,7 +306,6 @@ h2 {
 .result-header {
     font-weight: 500;
     font-size: 1rem;
-    text-transform: uppercase;
     cursor: initial;
     position: sticky;
     top: 0;
@@ -383,6 +392,10 @@ h4 {
 .info svg {
     height: 1em;
     margin-right: .5em;
+}
+:global(mark) {
+    background: transparent;
+    font-weight: 500;
 }
 @media (max-width: 600px) {
     .result-row {
