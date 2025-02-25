@@ -9,7 +9,7 @@ import { productionCodes } from "./lib/productionCodes"
 import { configStore, dataStore, totals } from "./stores"
 import type { Config, AgriculturalSubsidy } from "./stores"
 
-const endpoint = 'https://services.api.no/api/acies/v1/custom/AgriculturalSubsidy?'
+const endpoint = 'https://services.snap0.api.no/api/acies/v1/custom/AgriculturalSubsidy?'
 
 // Main list
 let listData: any[] = []
