@@ -9,6 +9,7 @@ import Map from "./Map.svelte"
 import I from "./icons/I.svelte"
 import { municipalities } from "./lib/municipalities"
 import { productionCodes } from "./lib/productionCodes"
+import { municipalities as municipalities2024 } from "./lib/newGeo"
 import { configStore, dataStore, totals } from "./stores"
 import type { Config, AgriculturalSubsidy } from "./stores"
 
@@ -42,6 +43,9 @@ const expandList = () => {
     listLength += left >= nextLength ? nextLength : left
 }
 const getMunicipality = (number: string): string | undefined => {
+    if ($configStore.year == '2024') {
+        return municipalities2024.find(e => e.code == number)?.name
+    }
     const m = municipalities.find(e => e[1] == number)
     return m ? m[0] : undefined
 }
