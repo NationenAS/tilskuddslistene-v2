@@ -4,11 +4,11 @@ body {
 }
 
 #Tilskuddslistene {
-    --TLAccentHue: 30deg;
-    --TLAccentColorFull: hsl(var(--TLAccentHue), 100%, 50%);
-    --TLAccentColorBackground: hsl(var(--TLAccentHue), 100%, 95%);
-    --TLAccentColorLight: hsl(var(--TLAccentHue), 100%, 80%);
-    --TLAccentColorDark: hsl(var(--TLAccentHue), 100%, 20%);
+    --TLAccentHue: 197.56deg;
+    --TLAccentColorFull: hsl(var(--TLAccentHue) 53.25% 84.9%);
+    --TLAccentColorBackground: hsl(var(--TLAccentHue) 53.25% 95%);
+    --TLAccentColorLight: hsl(var(--TLAccentHue) 53.25% 93%);
+    --TLAccentColorDark: hsl(var(--TLAccentHue) 53.25% 30%);
     --TLButtonBorderRadius: 99px;
     --TLButtonPadding: 0.6rem 1.2rem;
     --TLBoxBorderRadius: 3px;

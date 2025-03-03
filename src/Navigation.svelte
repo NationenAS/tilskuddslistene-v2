@@ -1,19 +1,29 @@
 <script lang="ts">
 
 import Select from "./Select.svelte";
-import { counties } from "./lib/counties"
-import { municipalities } from "./lib/municipalities"
+import { counties as counties2023 } from "./lib/counties"
+import { municipalities as municipalities2023 } from "./lib/municipalities"
+import { counties, municipalities } from "./lib/newGeo";
 // import { selectableCodes } from "./lib/selectList";
 import { selectableCodes } from "./lib/codes";
 import { defaultConfig, configStore } from "./stores"
 import type { Config } from "./stores";
+
+const getGeo = (year: string): { municipalities: [name: string, code: string, county: string][]; counties: [name: string, code: string][] } => {
+    if (year == '2024') return { 
+        municipalities: municipalities.map(item => [item.name, item.code, item.parent.code]),
+        counties: counties.map(item => [item.name, item.code]) }
+    return { municipalities: municipalities2023, counties: counties2023 }
+}
+
+$: geo = getGeo($configStore.year)
 
 let localConfig: Config = { ...$configStore };
 
 const updateConfig = () => {
     // If municipality, set county
     if (localConfig.municipality != $configStore.municipality && localConfig.municipality != undefined) {
-        localConfig.county = municipalities.find(e => e[1] == localConfig.municipality)?.[2] || undefined;
+        localConfig.county = geo.municipalities.find(e => e[1] == localConfig.municipality)?.[2] || undefined;
     }
     // If county, reset municipality
     else if (localConfig.county != $configStore.county) {
@@ -39,7 +49,7 @@ const reset = () => {
     $configStore = { ...defaultConfig }
 }
 
-$: filteredMunicipalities = $configStore.county == undefined ? municipalities : municipalities.filter(m => m[2] == $configStore.county)
+$: filteredMunicipalities = $configStore.county == undefined ? geo.municipalities : geo.municipalities.filter(m => m[2] == $configStore.county)
 
 </script>
 
@@ -50,6 +60,7 @@ $: filteredMunicipalities = $configStore.county == undefined ? municipalities : 
             <Select 
                 bind:value={localConfig.year}
                 options={[
+                    { label: '2024', value: '2024' },
                     { label: '2023', value: '2023' },
                     { label: '2022', value: '2022' }
                 ]} 
@@ -71,7 +82,7 @@ $: filteredMunicipalities = $configStore.county == undefined ? municipalities : 
             <legend>Geografi</legend>
             <Select 
                 bind:value={localConfig.county}
-                options={[{ label: 'Alle fylker', value: undefined }, ...counties.map(c => ({ label: c[0], value: c[1] }))]} 
+                options={[{ label: 'Alle fylker', value: undefined }, ...geo.counties.map(c => ({ label: c[0], value: c[1] }))]} 
                 callback={updateConfig} 
             />
             <Select 

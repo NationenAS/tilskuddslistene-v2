@@ -1,15 +1,18 @@
 <script lang="ts">
 
+// @ts-ignore
 import Spinner from "./Spinner.svelte"
 import Navigation from "./Navigation.svelte"
+// @ts-ignore
 import Map from "./Map.svelte"
+// @ts-ignore
 import I from "./icons/I.svelte"
 import { municipalities } from "./lib/municipalities"
 import { productionCodes } from "./lib/productionCodes"
 import { configStore, dataStore, totals } from "./stores"
 import type { Config, AgriculturalSubsidy } from "./stores"
 
-const endpoint = 'https://services.snap0.api.no/api/acies/v1/custom/AgriculturalSubsidy?'
+const endpoint = 'https://services.api.no/api/acies/v1/custom/AgriculturalSubsidy?'
 
 // Main list
 let listData: any[] = []
@@ -137,7 +140,7 @@ function toggleInfo(orgnr: string) {
         uniqueOrgnr = lastUniqueOrgnr;
         return 
     }
-    let params = `limit=2&equal=orgnr:${orgnr}`
+    let params = `equal=orgnr:${orgnr}`
     console.log("Fetching unique: " + endpoint + params)
     fetch(endpoint + params)
         .then(r => r.json())
@@ -164,6 +167,8 @@ const highlightMatches = (reference: string, name: string): string => {
 
 <h2>Tilskuddslistene {$configStore.year}</h2>
 
+<p>Her finner du oppdaterte tall for <strong>produksjons- og avløsertilskudd</strong>. Vi jobber med å få inn tall for <strong>pristilskudd</strong>.</p>
+
 <Navigation />
 
 {#if $totals.count == 0 && fetching}
@@ -175,7 +180,7 @@ const highlightMatches = (reference: string, name: string): string => {
 {:else if $totals.count > 0}
 <div class="search-info">
     {#if $totals.count == nationaLimit}
-        <I size="1.1rem" />Det er mange treff i søket, viser kun de største { nationaLimit } mottakere. Filtrer på geografi for å se alle.
+        <I size="1.1rem" />Viser kun de største { nationaLimit } mottakere. Filtrer på geografi for å se alle.
     {:else if $totals.count > 0}
         <span>Antall mottakere: {$totals.count.toLocaleString('nb-NO')}.</span>
         <span>
@@ -220,34 +225,15 @@ const highlightMatches = (reference: string, name: string): string => {
                     <div on:click={() => { map.zoomToPoint(uniqueData.find(year => year.soeknads_aar == $configStore.year).id) }} on:keypress={() => { map.zoomToPoint(uniqueData.find(year => year.soeknads_aar == $configStore.year).id) }}><svg viewBox="0 0 23 33.6"><path d="M11.5,0c6.3-.1,12,6.1,11.5,12.5-.1,3.2-2,5.8-3.5,8.5-2.1,3.7-6.7,11.8-7,12.1-.5,.8-1.7,.7-2.1,0-.5-.9-5.8-10-7.9-13.7C1.3,17.3,.1,15,0,12.6-.5,6.2,5.1,0,11.5,0c0,0,0,0,0,0ZM6.4,12c0,2.9,2.3,5,4.8,5.1,7.2,0,7.2-10.2,.2-10.3-2.6,0-5,2.3-5,5.1Z"></path></svg><u>Se gården på kart</u></div>
                 </div>
                 <div class="info-summary">
-                    <div>
+                    {#each uniqueData.reverse() as item}
                         <div>
-                            <div>{$configStore.year}</div>
+                            <div>{item.soeknads_aar}</div>
                             <div>Sum produksjons- og avløsertilskudd</div>
-                            <div>{ item.sum_produksjons_og_avloesertilskudd.toLocaleString('nb-NO') }</div>
+                            <div>{item.sum_produksjons_og_avloesertilskudd.toLocaleString('nb-NO') }</div>
                         </div>
-                        <div>
-                            <div></div>
-                            <div>&mdash; Hvorav avløsertilskudd</div>
-                            <div>{ item.avloesertilskudd.toLocaleString('nb-NO') }</div>
-                        </div>
-                    </div>
-                    {#if $configStore.year != '2022' && uniqueData.find(year => year.soeknads_aar == '2022')}
-                    <div>
-                        <div>
-                            <div>2022</div>
-                            <div>Sum produksjons- og avløsertilskudd</div>
-                            <div>{ uniqueData.find(year => year.soeknads_aar == '2022').sum_produksjons_og_avloesertilskudd.toLocaleString('nb-NO') }</div>
-                        </div>
-                        <div>
-                            <div></div>
-                            <div>&mdash; Hvorav avløsertilskudd</div>
-                            <div>{ uniqueData.find(year => year.soeknads_aar == '2022').avloesertilskudd.toLocaleString('nb-NO') }</div>
-                        </div>
-                    </div>
-                    {/if}
+                    {/each}             
                 </div>
-                <h4>Utdrag av produksjon</h4>
+                <h4>Utdrag av produksjon i {$configStore.year}</h4>
                 <div class="info-details">
                     {#each relevantCodes as p}
                         <div style="background: {p.color};">
@@ -273,6 +259,12 @@ const highlightMatches = (reference: string, name: string): string => {
 h2 {
     margin-bottom: 0;
 }
+p {
+    margin: 0;
+}
+strong {
+    font-weight: 500;
+}
 .no-items {
     margin-top: 1.5rem;
 }
@@ -295,7 +287,7 @@ h2 {
     align-items: center;
     cursor: pointer;
     padding: 0.8rem 0;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #ddd;
 }
 .result-row:not(.result-header):hover {
     background: #eee;
@@ -352,14 +344,11 @@ h2 {
     font-size: 0.95rem;
 }
 .info-summary > div {
-    padding: 0.4rem;
-    background: #eee;
-}
-.info-summary > div > div {
+    padding: 0.1rem;
     display: grid;
     grid-template-columns: 3rem 1fr 6rem;
 }
-.info-summary > div > div > div:last-child {
+.info-summary > div > div:last-child {
     text-align: right;
     font-variant-numeric: tabular-nums;
 }

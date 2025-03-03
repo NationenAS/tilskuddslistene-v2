@@ -24,7 +24,7 @@ export const defaultConfig: Config = {
   name: undefined,
   type: undefined,
   codes: ['sum_produksjons_og_avloesertilskudd'],
-  year: "2023",
+  year: "2024",
   limit: 99999,
   unit: "kr"
 }
