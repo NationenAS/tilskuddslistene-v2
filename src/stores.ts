@@ -40,5 +40,8 @@ export const totals = derived([dataStore], ([$dataStore]) => {
   const sum = $dataStore.reduce((a, c) => {
     return a + c.sum;
   }, 0);
-  return { count, sum };
+  const each = $dataStore.reduce((a, c) => {
+    return { prod: a.prod + (c['sum_produksjons_og_avloesertilskudd'] as number), pris: a.pris + (c['sum_pristilskudd'] as number) };
+  }, { prod: 0, pris: 0 });
+  return { count, sum, each };
 })

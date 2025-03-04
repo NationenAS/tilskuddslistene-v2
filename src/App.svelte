@@ -60,7 +60,7 @@ const reset = () => {
 const transformRow = (row: AgriculturalSubsidy, ix: number, codes: string[]) => {
     let sum = 0
     for (const code of codes) {
-        sum = sum + Number(row[code] || 0)
+        sum = sum + Number(row[code])
     }
     return { ...row, ix, sum } 
 }
@@ -82,7 +82,7 @@ const updateQuery = (config: Config) => {
         params.append('equal', `county:${config.county};soeknads_aar:${config.year}`)
     else { 
         params.append('equal', `soeknads_aar:${config.year}`)
-        params.set('limit', '5000')
+        // params.set('limit', '5000')
     }
     if (config.name != undefined) 
         params.append('q', `orgnavn:${config.name}`)
@@ -206,7 +206,8 @@ const highlightMatches = (reference: string, name: string): string => {
   return output;
 }
 
-$: console.log('totals', $totals.sum);
+$: console.log('totals', $totals.each);
+$: console.log('pris', $dataStore.filter(e => e.sum_pristilskudd > 0));
 
 </script>
 
