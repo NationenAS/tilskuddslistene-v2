@@ -10,6 +10,7 @@ import I from "./icons/I.svelte"
 import { municipalities } from "./lib/municipalities"
 import { productionCodes } from "./lib/productionCodes"
 import { municipalities as municipalities2024 } from "./lib/newGeo"
+import { pris } from "./lib/pris"
 import { configStore, dataStore, totals } from "./stores"
 import type { Config, AgriculturalSubsidy } from "./stores"
 
@@ -59,7 +60,7 @@ const reset = () => {
 const transformRow = (row: AgriculturalSubsidy, ix: number, codes: string[]) => {
     let sum = 0
     for (const code of codes) {
-        sum = sum + Number(row[code])
+        sum = sum + Number(row[code] || 0)
     }
     return { ...row, ix, sum } 
 }
@@ -67,6 +68,7 @@ const updateQuery = (config: Config) => {
 
     reset()
     console.table(config)
+
     const params = new URLSearchParams()
     params.append('fields', `(id,orgnavn,orgnr,avloesertilskudd,soeknads_aar,saksbehandlende_kommune,geometry,${config.codes.join(',')})`)
     params.append('limit', config.limit.toString())
@@ -95,7 +97,45 @@ const updateQuery = (config: Config) => {
             return r.json()
         })
         .then((d: AgriculturalSubsidy[]) => {
-            $dataStore = d.map((row, i) => transformRow(row, i, config.codes));
+            const price = pris
+                .filter(e => {
+                    if (config.municipality != undefined) return e[2] == +config.municipality;
+                    else if (config.county != undefined) {
+                        const county = municipalities2024.filter(e => e.parent.code == config.county).map(e => +e.code)
+                        return county.includes(e[2])
+                    }
+                    return true;
+                })
+                .filter(e => {
+                    if ($configStore.name != undefined) 
+                        return e[1].toLowerCase().includes($configStore.name.toLowerCase());
+                    return true;
+                })
+                .map((e, i) => {
+                    return { 
+                        id: 'price' + i,
+                        orgnr: e[0],
+                        orgnavn: e[1],
+                        sum_pristilskudd: e[3],
+                        saksbehandlende_kommune: e[2],
+                        soeknads_aar: config.year
+                    }
+                })
+            const combined = [
+                ...d.map((row) => {
+                    const p = price.find(e => e.orgnr == +row.orgnr);
+                    row.sum_pristilskudd = p ? p.sum_pristilskudd : 0;
+                    return row;
+                }), 
+                ...price
+                    .filter(e => !d.find(r => +r.orgnr == +e.orgnr))
+                    .map(e => ({
+                        ...e,
+                        sum_produksjons_og_avloesertilskudd: 0,
+                    }))
+            ];
+
+            $dataStore = combined.map((row, i) => transformRow(row, i, config.codes));
             if (!$configStore.name) $dataStore.sort((a, b) => b.sum - a.sum);
             listLength = 10 // This will trigger updateListData
             fetching = false
@@ -166,6 +206,8 @@ const highlightMatches = (reference: string, name: string): string => {
   return output;
 }
 
+$: console.log('totals', $totals.sum);
+
 </script>
 
 
@@ -183,7 +225,7 @@ const highlightMatches = (reference: string, name: string): string => {
 
 {:else if $totals.count > 0}
 <div class="search-info">
-    {#if $totals.count == nationaLimit}
+    {#if $totals.count >= nationaLimit}
         <I size="1.1rem" />Viser kun de største { nationaLimit } mottakere. Filtrer på geografi for å se alle.
     {:else if $totals.count > 0}
         <span>Antall mottakere: {$totals.count.toLocaleString('nb-NO')}.</span>
@@ -214,7 +256,7 @@ const highlightMatches = (reference: string, name: string): string => {
               </svg>
             </div>
         </div>
-        {#each listData as item (item.id)}
+        {#each listData as item (item.orgnr)}
         <div class="result-row" class:expanded={uniqueOrgnr == item.orgnr} on:click={() => { toggleInfo(item.orgnr) }} on:keypress={() => { toggleInfo(item.orgnr) }}>
             <div>{@html $configStore.name ? highlightMatches($configStore.name, item.orgnavn) : item.orgnavn}</div>
             <div>{getMunicipality(item.saksbehandlende_kommune)}</div>
@@ -223,20 +265,26 @@ const highlightMatches = (reference: string, name: string): string => {
             <div class="info">
                 <div class="info-header">
                     <div>
-                        <p><span>Org.nr:</span> {uniqueData[0].orgnr}</p>
-                        <p><span>Totalt areal:</span> {uniqueData.find(year => year.soeknads_aar == $configStore.year).totalareal} dekar</p>
+                        <p><span>Org.nr:</span> {item.orgnr}</p>
+                        {#if uniqueData.length}<p><span>Totalt areal:</span> {uniqueData.find(year => year.soeknads_aar == $configStore.year).totalareal} dekar</p>{/if}
                     </div>
+                    {#if item?.geometry}
                     <div on:click={() => { map.zoomToPoint(uniqueData.find(year => year.soeknads_aar == $configStore.year).id) }} on:keypress={() => { map.zoomToPoint(uniqueData.find(year => year.soeknads_aar == $configStore.year).id) }}><svg viewBox="0 0 23 33.6"><path d="M11.5,0c6.3-.1,12,6.1,11.5,12.5-.1,3.2-2,5.8-3.5,8.5-2.1,3.7-6.7,11.8-7,12.1-.5,.8-1.7,.7-2.1,0-.5-.9-5.8-10-7.9-13.7C1.3,17.3,.1,15,0,12.6-.5,6.2,5.1,0,11.5,0c0,0,0,0,0,0ZM6.4,12c0,2.9,2.3,5,4.8,5.1,7.2,0,7.2-10.2,.2-10.3-2.6,0-5,2.3-5,5.1Z"></path></svg><u>Se gården på kart</u></div>
+                    {/if}
                 </div>
                 <div class="info-summary">
-                    {#each uniqueData.reverse() as item}
-                        <div>
-                            <div>{item.soeknads_aar}</div>
-                            <div>Sum produksjons- og avløsertilskudd</div>
-                            <div>{item.sum_produksjons_og_avloesertilskudd.toLocaleString('nb-NO') }</div>
-                        </div>
-                    {/each}             
+                    <div>
+                        <div>{item.soeknads_aar}</div>
+                        <div>Sum produksjons- og avløsertilskudd</div>
+                        <div>{item.sum_produksjons_og_avloesertilskudd.toLocaleString('nb-NO') }</div>
+                    </div>
+                    <div>
+                        <div>{item.soeknads_aar}</div>
+                        <div>Sum pristilskudd</div>
+                        <div>{item.sum_pristilskudd.toLocaleString('nb-NO') }</div>
+                    </div>
                 </div>
+                {#if relevantCodes.length}
                 <h4>Utdrag av produksjon i {$configStore.year}</h4>
                 <div class="info-details">
                     {#each relevantCodes as p}
@@ -246,6 +294,7 @@ const highlightMatches = (reference: string, name: string): string => {
                         </div>
                     {/each}
                 </div>
+                {/if}
                 <div class="info-disclaimer">Vi tar forbehold om at listen ikke er fullstendig.</div>
             </div>
             {/if}

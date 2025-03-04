@@ -46,7 +46,7 @@ function update(data) {
     markers = [];
     data = data.reverse();
     for (const point of data) {
-        if (point.geometry.x == 0) continue;
+        if (!point?.geometry || point.geometry?.x == 0) continue;
         let size = getSize(point);
         markers[point.id] = L.circleMarker([point.geometry.y, point.geometry.x], { radius: size.radius, originalRadius: size.radius })
             .on('click', () => {

@@ -23,7 +23,7 @@ export const defaultConfig: Config = {
   county: undefined,
   name: undefined,
   type: undefined,
-  codes: ['sum_produksjons_og_avloesertilskudd'],
+  codes: ['sum_produksjons_og_avloesertilskudd', 'sum_pristilskudd'],
   year: "2024",
   limit: 99999,
   unit: "kr"
