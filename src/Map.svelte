@@ -60,9 +60,10 @@ function update(data) {
         markers[point.id].addTo(pointGroup);
     }
     pointGroup.addTo(map);
-    map.flyToBounds(pointGroup.getBounds(), {
-        duration: 1
-    });
+    if (pointGroup.getBounds().isValid())
+        map.flyToBounds(pointGroup.getBounds(), {
+            duration: 1
+        });
     console.log("Map updated");
 }
 
