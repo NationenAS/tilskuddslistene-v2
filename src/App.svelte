@@ -214,8 +214,6 @@ $: console.log('pris', $dataStore.filter(e => e.sum_pristilskudd > 0));
 
 <h2>Tilskuddslistene {$configStore.year}</h2>
 
-<p>Her finner du oppdaterte tall for <strong>produksjons- og avløsertilskudd</strong>. Vi jobber med å få inn tall for <strong>pristilskudd</strong>.</p>
-
 <Navigation />
 
 {#if $totals.count == 0 && fetching}
