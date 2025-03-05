@@ -97,7 +97,7 @@ const updateQuery = (config: Config) => {
             return r.json()
         })
         .then((d: AgriculturalSubsidy[]) => {
-            const price = pris
+            const price = d.length == 0 ? [] : pris
                 .filter(e => {
                     if (config.municipality != undefined) return e[2] == +config.municipality;
                     else if (config.county != undefined) {
@@ -123,12 +123,12 @@ const updateQuery = (config: Config) => {
                 })
             const combined = [
                 ...d.map((row) => {
-                    const p = price.find(e => e.orgnr == +row.orgnr);
+                    const p = price.find(e => e.orgnr == row.orgnr);
                     row.sum_pristilskudd = p ? p.sum_pristilskudd : 0;
                     return row;
                 }), 
                 ...price
-                    .filter(e => !d.find(r => +r.orgnr == +e.orgnr))
+                    .filter(e => !d.find(r => r.orgnr == e.orgnr))
                     .map(e => ({
                         ...e,
                         sum_produksjons_og_avloesertilskudd: 0,
@@ -206,9 +206,6 @@ const highlightMatches = (reference: string, name: string): string => {
   return output;
 }
 
-$: console.log('totals', $totals.each);
-$: console.log('pris', $dataStore.filter(e => e.sum_pristilskudd > 0));
-
 </script>
 
 
@@ -220,7 +217,10 @@ $: console.log('pris', $dataStore.filter(e => e.sum_pristilskudd > 0));
 <Spinner />
 
 {:else if $totals.count == 0}
-<div class="no-items">Ingen oppføringer</div>
+<div class="no-items">
+    <span>Ingen oppføringer.</span>
+    {#if $configStore.name}<span>Prøv å spesifisere navnet bedre.</span>{/if}
+</div>
 
 {:else if $totals.count > 0}
 <div class="search-info">
@@ -275,7 +275,7 @@ $: console.log('pris', $dataStore.filter(e => e.sum_pristilskudd > 0));
                     <div>
                         <div>{item.soeknads_aar}</div>
                         <div>Sum produksjons- og avløsertilskudd</div>
-                        <div>{item.sum_produksjons_og_avloesertilskudd.toLocaleString('nb-NO') }</div>
+                        <div>{uniqueData.find(d => d.soeknads_aar == '2024').sum_produksjons_og_avloesertilskudd.toLocaleString('nb-NO') }</div>
                     </div>
                     <div>
                         <div>{item.soeknads_aar}</div>
@@ -316,9 +316,6 @@ p {
 }
 strong {
     font-weight: 500;
-}
-.no-items {
-    margin-top: 1.5rem;
 }
 .search-info {
     display: flex;
