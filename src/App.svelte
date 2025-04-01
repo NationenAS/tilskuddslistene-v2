@@ -168,10 +168,10 @@ function getProduction() {
     }
 }
 
-function toggleInfo(orgnr: string) { 
-    console.log(orgnr)
+async function toggleInfo(item: any) {
+    console.log(item)
     // Clicked on same item
-    if (orgnr == uniqueOrgnr) { 
+    if (item.orgnr == uniqueOrgnr) { 
         lastUniqueData = uniqueData; 
         lastUniqueOrgnr = uniqueOrgnr;
         uniqueData = [];
@@ -179,21 +179,23 @@ function toggleInfo(orgnr: string) {
         return ;
     }
     // Clicked on last expanded item
-    if (orgnr == lastUniqueOrgnr ) { 
+    if (item.orgnr == lastUniqueOrgnr ) { 
         uniqueData = lastUniqueData;
         uniqueOrgnr = lastUniqueOrgnr;
         return 
     }
-    let params = `equal=orgnr:${orgnr}`
+    let params = `equal=orgnr:${item.orgnr}`
     console.log("Fetching unique: " + endpoint + params)
-    fetch(endpoint + params)
+    const d = await fetch(endpoint + params)
         .then(r => r.json())
-        .then(d => {
-            uniqueData = d
-            uniqueOrgnr = orgnr
-            getProduction()
-            console.log(d)
-        })
+    if (d && d.length) {
+        uniqueData = d
+        getProduction()
+    }
+    else {
+        uniqueData = [item]
+    }
+    uniqueOrgnr = item.orgnr
 }
 
 const highlightMatches = (reference: string, name: string): string => {
@@ -256,7 +258,7 @@ const highlightMatches = (reference: string, name: string): string => {
             </div>
         </div>
         {#each listData as item (item.orgnr)}
-        <div class="result-row" class:expanded={uniqueOrgnr == item.orgnr} on:click={() => { toggleInfo(item.orgnr) }} on:keypress={() => { toggleInfo(item.orgnr) }}>
+        <div class="result-row" class:expanded={uniqueOrgnr == item.orgnr} on:click={() => { toggleInfo(item) }} on:keypress={() => { toggleInfo(item.orgnr) }}>
             <div>{@html $configStore.name ? highlightMatches($configStore.name, item.orgnavn) : item.orgnavn}</div>
             <div>{getMunicipality(item.saksbehandlende_kommune)}</div>
             <div class="result-sum">{ item.sum.toLocaleString('nb-NO') }</div>
@@ -265,7 +267,7 @@ const highlightMatches = (reference: string, name: string): string => {
                 <div class="info-header">
                     <div>
                         <p><span>Org.nr:</span> {item.orgnr}</p>
-                        {#if uniqueData.length}<p><span>Totalt areal:</span> {uniqueData.find(year => year.soeknads_aar == $configStore.year).totalareal} dekar</p>{/if}
+                        {#if uniqueData.length && uniqueData.find(year => year.soeknads_aar == $configStore.year)?.totalareal}<p><span>Totalt areal:</span> {uniqueData.find(year => year.soeknads_aar == $configStore.year)?.totalareal} dekar</p>{/if}
                     </div>
                     {#if item?.geometry}
                     <div on:click={() => { map.zoomToPoint(uniqueData.find(year => year.soeknads_aar == $configStore.year).id) }} on:keypress={() => { map.zoomToPoint(uniqueData.find(year => year.soeknads_aar == $configStore.year).id) }}><svg viewBox="0 0 23 33.6"><path d="M11.5,0c6.3-.1,12,6.1,11.5,12.5-.1,3.2-2,5.8-3.5,8.5-2.1,3.7-6.7,11.8-7,12.1-.5,.8-1.7,.7-2.1,0-.5-.9-5.8-10-7.9-13.7C1.3,17.3,.1,15,0,12.6-.5,6.2,5.1,0,11.5,0c0,0,0,0,0,0ZM6.4,12c0,2.9,2.3,5,4.8,5.1,7.2,0,7.2-10.2,.2-10.3-2.6,0-5,2.3-5,5.1Z"></path></svg><u>Se gården på kart</u></div>
