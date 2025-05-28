@@ -125,6 +125,8 @@ const updateQuery = (config: Config) => {
                 ...d.map((row) => {
                     const p = price.find(e => e.orgnr == row.orgnr);
                     row.sum_pristilskudd = p ? p.sum_pristilskudd : 0;
+                    // TODO: Remove this
+                    if (row.orgnr == 884330262 && config.year == '2024') row.sum_produksjons_og_avloesertilskudd = 426498;
                     return row;
                 }), 
                 ...price
@@ -189,6 +191,11 @@ async function toggleInfo(item: any) {
     const d = await fetch(endpoint + params)
         .then(r => r.json())
     if (d && d.length) {
+        // TODO: Remove this
+        if (d[0].orgnr == 884330262) {
+            const thisYear = d.find((e: any) => e.soeknads_aar == '2024')
+            thisYear.sum_produksjons_og_avloesertilskudd = 426498;
+        }
         uniqueData = d
         getProduction()
     }
